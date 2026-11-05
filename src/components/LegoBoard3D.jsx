@@ -232,6 +232,7 @@ export default function LegoBoard3D({
   const rendererRef = useRef(null);
   const bricksGroupRef = useRef(null);
   const connectionsGroupRef = useRef(null);
+  const ghostMeshRef = useRef(null);
   const planeRef = useRef(null);
 
   // Inspector card states
@@ -244,7 +245,7 @@ export default function LegoBoard3D({
   const [connectionLabelInput, setConnectionLabelInput] = useState('');
 
   // Hover coordinate for placement
-  const [hoverCoords, setHoverCoords] = useState(null);
+  const [hoverCoords, setHoverCoords] = useState({ x: 0, y: 0, z: 0 });
 
   const selectedBrick = bricks.find((b) => b.id === selectedBrickId);
 
@@ -467,6 +468,39 @@ export default function LegoBoard3D({
     });
   }, [connections, bricks]);
 
+  // Ghost preview mesh when in 'place' mode
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    if (ghostMeshRef.current) {
+      scene.remove(ghostMeshRef.current);
+      ghostMeshRef.current = null;
+    }
+
+    if (activeTool === 'place' && hoverCoords) {
+      const ghostBrick = {
+        id: 'ghost',
+        type: selectedBrickType || 'brick-2x4',
+        color: selectedColor || '#E3000B',
+        x: hoverCoords.x,
+        y: hoverCoords.y,
+        z: hoverCoords.z,
+        rotation: placementRotation,
+      };
+      const mesh = createLegoBrickMesh(ghostBrick, false, false);
+      mesh.traverse((child) => {
+        if (child.isMesh) {
+          child.material = child.material.clone();
+          child.material.transparent = true;
+          child.material.opacity = 0.55;
+        }
+      });
+      scene.add(mesh);
+      ghostMeshRef.current = mesh;
+    }
+  }, [activeTool, selectedBrickType, selectedColor, placementRotation, hoverCoords]);
+
   // Raycaster helper
   function getRaycastHit(clientX, clientY) {
     if (!mountRef.current || !cameraRef.current || !sceneRef.current) return null;
@@ -486,14 +520,20 @@ export default function LegoBoard3D({
           root = root.parent;
         }
         const bId = root.userData?.brickId;
+        const hitBrick = bricks.find((b) => b.id === bId);
+        const catalogItem =
+          BRICK_CATALOG.find((c) => c.id === hitBrick?.type) || BRICK_CATALOG[0];
         const hitPt = brickHits[0].point;
+        const topY = hitBrick
+          ? Number(((hitBrick.y || 0) + catalogItem.height).toFixed(2))
+          : Number((hitPt.y + 0.1).toFixed(2));
         return {
           type: 'brick',
           brickId: bId,
           point: hitPt,
-          placeX: Math.round(hitPt.x),
-          placeY: Number((hitPt.y + 0.1).toFixed(2)),
-          placeZ: Math.round(hitPt.z),
+          placeX: Math.max(-12, Math.min(12, Math.round(hitPt.x))),
+          placeY: topY,
+          placeZ: Math.max(-12, Math.min(12, Math.round(hitPt.z))),
         };
       }
     }

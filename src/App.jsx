@@ -48,7 +48,104 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [roomState, setRoomState] = useState(null);
+  const createFallbackRoom = (user) => {
+    const code = (user?.roomCode || 'ONU2026').toUpperCase();
+    const savedLocal = localStorage.getItem(`lsp_room_${code}`);
+    if (savedLocal) {
+      try {
+        return JSON.parse(savedLocal);
+      } catch (e) {
+        // ignore parse error
+      }
+    }
+    return {
+      roomCode: code,
+      templateId: user?.templateId || 'prospectiva-2050',
+      createdAt: new Date().toISOString(),
+      currentStageIndex: 0,
+      corePhase: 'build',
+      levelMode: 'individual',
+      customQuestion: '',
+      timer: { remainingSeconds: 240, totalSeconds: 240, isRunning: false },
+      spotlightParticipantId: null,
+      participants: user
+        ? {
+            [user.id]: {
+              id: user.id,
+              name: user.name,
+              role: user.role,
+              avatarColor: user.avatarColor,
+              online: true,
+              ready: false,
+            },
+          }
+        : {},
+      bricks: [
+        {
+          id: 'seed-brick-1',
+          type: 'brick-2x4',
+          color: '#E3000B',
+          x: -4,
+          y: 0,
+          z: -4,
+          rotation: 0,
+          ownerId: 'demo-facilitator',
+          ownerName: 'Facilitator',
+          metaphorTitle: 'Institutional Foundation',
+          metaphorDesc: 'Represents territorial articulation and participatory governance.',
+          isRedBrick: false,
+        },
+        {
+          id: 'seed-brick-2',
+          type: 'tower-2x2',
+          color: '#FFD500',
+          x: -4,
+          y: 1.2,
+          z: -4,
+          rotation: 0,
+          ownerId: 'demo-facilitator',
+          ownerName: 'Facilitator',
+          metaphorTitle: '2050 Innovation Beacon',
+          metaphorDesc: 'Shared vision toward sustainability and resilience.',
+          isRedBrick: true,
+        },
+        {
+          id: 'seed-brick-3',
+          type: 'minifig',
+          color: '#0055BF',
+          x: 4,
+          y: 0,
+          z: -4,
+          rotation: 0,
+          ownerId: 'demo-facilitator',
+          ownerName: 'Facilitator',
+          metaphorTitle: 'Active Citizenship',
+          metaphorDesc: 'Key stakeholders at the center of strategic decisions.',
+          isRedBrick: false,
+        },
+      ],
+      connections: [
+        {
+          id: 'seed-conn-1',
+          fromBrickId: 'seed-brick-2',
+          toBrickId: 'seed-brick-3',
+          type: 'flexible',
+          label: 'Participatory Link',
+          color: '#10B981',
+          ownerId: 'demo-facilitator',
+        },
+      ],
+      stories: [],
+      reflections: [],
+      emergentEvents: [],
+    };
+  };
+
+  const [roomState, setRoomState] = useState(() => {
+    const saved = localStorage.getItem('lsp_session_user');
+    const parsedUser = saved ? JSON.parse(saved) : null;
+    return createFallbackRoom(parsedUser);
+  });
   const [selectedBrickType, setSelectedBrickType] = useState(BRICK_CATALOG[0].id);
   const [selectedColor, setSelectedColor] = useState(LEGO_COLORS[0].hex);
   const [selectedBrickId, setSelectedBrickId] = useState(null);
@@ -113,6 +210,37 @@ export default function App() {
     };
   }, [sessionUser]);
 
+  // Persist roomState locally as fallback when working offline/serverless
+  useEffect(() => {
+    if (roomState?.roomCode) {
+      try {
+        localStorage.setItem(`lsp_room_${roomState.roomCode}`, JSON.stringify(roomState));
+      } catch (e) {
+        // ignore quota error
+      }
+    }
+  }, [roomState]);
+
+  // Local timer tick fallback when server socket is not connected
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (socketRef.current?.connected) return;
+      setRoomState((prev) => {
+        if (!prev?.timer?.isRunning || prev.timer.remainingSeconds <= 0) return prev;
+        const nextSec = Math.max(0, prev.timer.remainingSeconds - 1);
+        return {
+          ...prev,
+          timer: {
+            ...prev.timer,
+            remainingSeconds: nextSec,
+            isRunning: nextSec > 0,
+          },
+        };
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleJoinRoom = ({ name, roomCode, role, avatarColor, templateId }) => {
     const existingId =
       sessionUser?.id || `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -126,6 +254,24 @@ export default function App() {
     };
     localStorage.setItem('lsp_session_user', JSON.stringify(newUser));
     setSessionUser(newUser);
+    setRoomState((prev) => {
+      const base = prev && prev.roomCode === roomCode ? prev : createFallbackRoom(newUser);
+      return {
+        ...base,
+        templateId: templateId || base.templateId,
+        participants: {
+          ...(base.participants || {}),
+          [newUser.id]: {
+            id: newUser.id,
+            name: newUser.name,
+            role: newUser.role,
+            avatarColor: newUser.avatarColor,
+            online: true,
+            ready: false,
+          },
+        },
+      };
+    });
   };
 
   const handleLeaveRoom = () => {
@@ -168,36 +314,45 @@ export default function App() {
   const participantsList = Object.values(roomState?.participants || {});
   const myParticipant = roomState?.participants?.[sessionUser.id] || sessionUser;
 
-  // Socket Actions
+  // Socket Actions (with optimistic local state updates so Vercel/offline works seamlessly)
   const updateWorkshopState = (payload) => {
+    setRoomState((prev) => (prev ? { ...prev, ...payload } : prev));
     socketRef.current?.emit('workshop:updateState', payload);
   };
 
   const handleStageChange = (newIndex) => {
     if (newIndex < 0 || newIndex >= currentTemplate.stages.length) return;
     const stage = currentTemplate.stages[newIndex];
+    const dur = stage.recommendedSeconds || 240;
     updateWorkshopState({
       currentStageIndex: newIndex,
       levelMode: stage.level,
       corePhase: 'challenge',
       customQuestion: '',
+      timer: { remainingSeconds: dur, totalSeconds: dur, isRunning: false },
     });
     socketRef.current?.emit('timer:control', {
       action: 'set',
-      durationSeconds: stage.recommendedSeconds || 240,
+      durationSeconds: dur,
     });
   };
 
   const handleSaveStory = (e) => {
     e.preventDefault();
     if (!storyNarrative.trim()) return;
-    socketRef.current?.emit('story:save', {
+    const newStory = {
+      id: `story-${Date.now()}`,
       participantId: sessionUser.id,
       participantName: sessionUser.name,
       stageIndex: currentStageIndex,
-      title: storyTitle.trim() || `${language === 'en' ? "Model by" : "Modelo de"} ${sessionUser.name}`,
+      title: storyTitle.trim() || `${language === 'en' ? 'Model by' : 'Modelo de'} ${sessionUser.name}`,
       narrative: storyNarrative.trim(),
-    });
+      timestamp: Date.now(),
+    };
+    setRoomState((prev) =>
+      prev ? { ...prev, stories: [newStory, ...(prev.stories || [])] } : prev
+    );
+    socketRef.current?.emit('story:save', newStory);
     setStoryTitle('');
     setStoryNarrative('');
   };
@@ -205,11 +360,17 @@ export default function App() {
   const handleAddReflection = (e) => {
     e.preventDefault();
     if (!reflectionText.trim()) return;
-    socketRef.current?.emit('reflection:add', {
+    const newRef = {
+      id: `ref-${Date.now()}`,
       authorName: sessionUser.name,
       category: reflectionCategory,
       text: reflectionText.trim(),
-    });
+      timestamp: Date.now(),
+    };
+    setRoomState((prev) =>
+      prev ? { ...prev, reflections: [newRef, ...(prev.reflections || [])] } : prev
+    );
+    socketRef.current?.emit('reflection:add', newRef);
     setReflectionText('');
   };
 
@@ -220,6 +381,7 @@ export default function App() {
     reader.onload = (ev) => {
       try {
         const parsed = JSON.parse(ev.target.result);
+        setRoomState((prev) => (prev ? { ...prev, ...parsed } : parsed));
         socketRef.current?.emit('room:importState', parsed);
       } catch (err) {
         alert(language === 'en' ? 'Invalid JSON file.' : 'Archivo JSON inválido.');
@@ -315,23 +477,47 @@ export default function App() {
           >
             <span>{formatTime(timer.remainingSeconds)}</span>
             <button
-              onClick={() =>
+              onClick={() => {
+                setRoomState((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        timer: {
+                          ...(prev.timer || { remainingSeconds: 240, totalSeconds: 240 }),
+                          isRunning: !timer.isRunning,
+                        },
+                      }
+                    : prev
+                );
                 socketRef.current?.emit('timer:control', {
                   action: timer.isRunning ? 'pause' : 'start',
-                })
-              }
+                });
+              }}
               className="p-1 rounded hover:bg-slate-800 text-slate-200"
               title={timer.isRunning ? t('timerPaused') : t('timerRunning')}
             >
               {timer.isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
             </button>
             <button
-              onClick={() =>
+              onClick={() => {
+                const dur = currentStage.recommendedSeconds || 240;
+                setRoomState((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        timer: {
+                          remainingSeconds: dur,
+                          totalSeconds: dur,
+                          isRunning: false,
+                        },
+                      }
+                    : prev
+                );
                 socketRef.current?.emit('timer:control', {
                   action: 'reset',
-                  durationSeconds: currentStage.recommendedSeconds || 240,
-                })
-              }
+                  durationSeconds: dur,
+                });
+              }}
               className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white"
               title={t('resetTimer')}
             >
@@ -340,11 +526,22 @@ export default function App() {
           </div>
 
           <button
-            onClick={() =>
+            onClick={() => {
+              setRoomState((prev) => {
+                if (!prev) return prev;
+                const p = prev.participants?.[sessionUser.id] || sessionUser;
+                return {
+                  ...prev,
+                  participants: {
+                    ...(prev.participants || {}),
+                    [sessionUser.id]: { ...p, ready: !p.ready },
+                  },
+                };
+              });
               socketRef.current?.emit('participant:toggleReady', {
                 participantId: sessionUser.id,
-              })
-            }
+              });
+            }}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition ${
               myParticipant?.ready
                 ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
@@ -462,6 +659,16 @@ export default function App() {
                     onClick={() => {
                       setSelectedColor(c.hex);
                       if (selectedBrickId) {
+                        setRoomState((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                bricks: (prev.bricks || []).map((b) =>
+                                  b.id === selectedBrickId ? { ...b, color: c.hex } : b
+                                ),
+                              }
+                            : prev
+                        );
                         socketRef.current?.emit('brick:update', {
                           brickId: selectedBrickId,
                           updates: { color: c.hex },
@@ -575,11 +782,26 @@ export default function App() {
           {/* Clear my bricks action */}
           <div className="pt-2 border-t border-slate-800 flex gap-2">
             <button
-              onClick={() =>
+              onClick={() => {
+                setRoomState((prev) => {
+                  if (!prev) return prev;
+                  const myIds = new Set(
+                    (prev.bricks || [])
+                      .filter((b) => b.ownerId === sessionUser.id)
+                      .map((b) => b.id)
+                  );
+                  return {
+                    ...prev,
+                    bricks: (prev.bricks || []).filter((b) => b.ownerId !== sessionUser.id),
+                    connections: (prev.connections || []).filter(
+                      (c) => !myIds.has(c.fromBrickId) && !myIds.has(c.toBrickId)
+                    ),
+                  };
+                });
                 socketRef.current?.emit('brick:clearMine', {
                   participantId: sessionUser.id,
-                })
-              }
+                });
+              }}
               className="flex-1 py-1.5 px-2 bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -598,18 +820,19 @@ export default function App() {
             selectedBrickId={selectedBrickId}
             onSelectBrick={setSelectedBrickId}
             onAddBrick={(brick) => {
-              // Optimistic local update so brick immediately shows even before socket round-trip
-              setRoomState((prev) =>
-                prev ? { ...prev, bricks: [...(prev.bricks || []), brick] } : prev
-              );
+              // Optimistic local update (creates fallback room if prev is somehow null)
+              setRoomState((prev) => {
+                const base = prev || createFallbackRoom(sessionUser);
+                return { ...base, bricks: [...(base.bricks || []), brick] };
+              });
               socketRef.current?.emit('brick:add', brick);
             }}
             onUpdateBrick={(brickId, updates) => {
               setRoomState((prev) => {
-                if (!prev) return prev;
+                const base = prev || createFallbackRoom(sessionUser);
                 return {
-                  ...prev,
-                  bricks: (prev.bricks || []).map((b) =>
+                  ...base,
+                  bricks: (base.bricks || []).map((b) =>
                     b.id === brickId ? { ...b, ...updates } : b
                   ),
                 };
@@ -618,11 +841,11 @@ export default function App() {
             }}
             onDeleteBrick={(brickId) => {
               setRoomState((prev) => {
-                if (!prev) return prev;
+                const base = prev || createFallbackRoom(sessionUser);
                 return {
-                  ...prev,
-                  bricks: (prev.bricks || []).filter((b) => b.id !== brickId),
-                  connections: (prev.connections || []).filter(
+                  ...base,
+                  bricks: (base.bricks || []).filter((b) => b.id !== brickId),
+                  connections: (base.connections || []).filter(
                     (c) => c.fromBrickId !== brickId && c.toBrickId !== brickId
                   ),
                 };
@@ -630,17 +853,18 @@ export default function App() {
               socketRef.current?.emit('brick:delete', { brickId });
             }}
             onAddConnection={(conn) => {
-              setRoomState((prev) =>
-                prev ? { ...prev, connections: [...(prev.connections || []), conn] } : prev
-              );
+              setRoomState((prev) => {
+                const base = prev || createFallbackRoom(sessionUser);
+                return { ...base, connections: [...(base.connections || []), conn] };
+              });
               socketRef.current?.emit('connection:add', conn);
             }}
             onDeleteConnection={(connectionId) => {
               setRoomState((prev) => {
-                if (!prev) return prev;
+                const base = prev || createFallbackRoom(sessionUser);
                 return {
-                  ...prev,
-                  connections: (prev.connections || []).filter((c) => c.id !== connectionId),
+                  ...base,
+                  connections: (base.connections || []).filter((c) => c.id !== connectionId),
                 };
               });
               socketRef.current?.emit('connection:delete', { connectionId });
@@ -918,11 +1142,21 @@ export default function App() {
                             </div>
                           </div>
                           <button
-                            onClick={() =>
+                            onClick={() => {
+                              setRoomState((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      connections: (prev.connections || []).filter(
+                                        (conn) => conn.id !== c.id
+                                      ),
+                                    }
+                                  : prev
+                              );
                               socketRef.current?.emit('connection:delete', {
                                 connectionId: c.id,
-                              })
-                            }
+                              });
+                            }}
                             className="p-1 text-slate-500 hover:text-rose-400"
                             title="Delete link"
                           >
@@ -1060,7 +1294,10 @@ export default function App() {
                     {(currentTemplate.emergentPresets || []).map((ev, i) => (
                       <button
                         key={i}
-                        onClick={() => socketRef.current?.emit('emergent:trigger', ev)}
+                        onClick={() => {
+                          setEmergentAlert(ev);
+                          socketRef.current?.emit('emergent:trigger', ev);
+                        }}
                         className="w-full p-2 rounded-lg bg-rose-950/50 hover:bg-rose-900/60 border border-rose-500/40 text-left transition"
                       >
                         <div className="font-bold text-rose-200">
@@ -1092,7 +1329,7 @@ export default function App() {
                     <button
                       onClick={() => {
                         if (!customEmergentTitle.trim()) return;
-                        socketRef.current?.emit('emergent:trigger', {
+                        const customEv = {
                           title: customEmergentTitle,
                           titleEn: customEmergentTitle,
                           description:
@@ -1103,7 +1340,9 @@ export default function App() {
                             customEmergentQuestion ||
                             (language === 'en' ? 'How does our model adapt to this sudden change?' : '¿Cómo se adapta nuestro modelo ante este cambio?'),
                           impactQuestionEn: customEmergentQuestion || 'How does our model adapt to this sudden change?',
-                        });
+                        };
+                        setEmergentAlert(customEv);
+                        socketRef.current?.emit('emergent:trigger', customEv);
                         setCustomEmergentTitle('');
                         setCustomEmergentQuestion('');
                       }}
