@@ -35,6 +35,6 @@ npm run dev
    - **Conectores Sistémicos 3D:** Traza vínculos rígidos, flexibles o causales entre piezas con etiquetas de relación.
    - **Simulador de Eventos Emergentes:** Dispara escenarios disruptivos en tiempo real (ej. *Terremoto / Emergencia Sísmica Mayor*, *Crisis Climática 2035*, *Transición IA*) para evaluar cómo se adapta el sistema construido.
 5. **Plantillas de Talleres e Informe PDF**
-   - Incluye plantillas para **Prospectiva Territorial y Visión 2050 (CEPAL / ILPES / Quindío)**, **Estrategia en Tiempo Real para Equipos** y **Matriz 2×2 de Gestión de Riesgos**.
+   -
    - Exportación inmediata a **Informe PDF estructurado** y respaldo completo en **JSON**.
 
