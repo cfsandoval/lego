@@ -4,7 +4,7 @@
     "templateId": "prospectiva-2050",
     "createdAt": "2026-11-05T12:06:17.357Z",
     "currentStageIndex": 0,
-    "corePhase": "challenge",
+    "corePhase": "build",
     "levelMode": "individual",
     "customQuestion": "",
     "timer": {
@@ -13,15 +13,15 @@
       "isRunning": false,
       "lastUpdated": 1793880377357
     },
-    "spotlightParticipantId": null,
+    "spotlightParticipantId": "user-1793883013540-qfsg9",
     "participants": {
       "user-1793883013540-qfsg9": {
         "id": "user-1793883013540-qfsg9",
-        "socketId": "nd9912Cc6ZHMVdkXAAAE",
+        "socketId": "blniXHyASwWROfptAAAF",
         "name": "cse",
         "role": "facilitator",
         "avatarColor": "#E3000B",
-        "online": false,
+        "online": true,
         "ready": false,
         "zoneIndex": 0
       }

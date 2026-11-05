@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import LobbyModal from './components/LobbyModal';
 import LegoBoard3D from './components/LegoBoard3D';
+import { useLanguage } from './context/LanguageContext';
 import {
   BRICK_CATALOG,
   LEGO_COLORS,
@@ -36,9 +37,12 @@ import {
   LogOut,
   Send,
   Zap,
+  Languages,
 } from 'lucide-react';
 
 export default function App() {
+  const { language, setLanguage, t } = useLanguage();
+
   const [sessionUser, setSessionUser] = useState(() => {
     const saved = localStorage.getItem('lsp_session_user');
     return saved ? JSON.parse(saved) : null;
@@ -57,8 +61,10 @@ export default function App() {
   const [storyTitle, setStoryTitle] = useState('');
   const [storyNarrative, setStoryNarrative] = useState('');
 
-  // Reflection / Simple Guiding Principle form states
-  const [reflectionCategory, setReflectionCategory] = useState('Principio Rector Simple');
+  // Reflection form states
+  const [reflectionCategory, setReflectionCategory] = useState(
+    language === 'en' ? 'Simple Guiding Principle' : 'Principio Rector Simple'
+  );
   const [reflectionText, setReflectionText] = useState('');
 
   // Custom question / Custom emergent event states
@@ -143,8 +149,11 @@ export default function App() {
   const currentStage =
     currentTemplate.stages[currentStageIndex] || currentTemplate.stages[0];
 
+  const stageQuestion =
+    language === 'en' && currentStage.questionEn ? currentStage.questionEn : currentStage.question;
+
   const activeQuestion =
-    roomState?.customQuestion?.trim() ? roomState.customQuestion : currentStage.question;
+    roomState?.customQuestion?.trim() ? roomState.customQuestion : stageQuestion;
 
   const corePhase = roomState?.corePhase || 'challenge';
   const levelMode = roomState?.levelMode || currentStage.level || 'individual';
@@ -158,7 +167,6 @@ export default function App() {
 
   const participantsList = Object.values(roomState?.participants || {});
   const myParticipant = roomState?.participants?.[sessionUser.id] || sessionUser;
-  const isFacilitator = sessionUser.role === 'facilitator';
 
   // Socket Actions
   const updateWorkshopState = (payload) => {
@@ -187,7 +195,7 @@ export default function App() {
       participantId: sessionUser.id,
       participantName: sessionUser.name,
       stageIndex: currentStageIndex,
-      title: storyTitle.trim() || `Modelo de ${sessionUser.name}`,
+      title: storyTitle.trim() || `${language === 'en' ? "Model by" : "Modelo de"} ${sessionUser.name}`,
       narrative: storyNarrative.trim(),
     });
     setStoryTitle('');
@@ -214,7 +222,7 @@ export default function App() {
         const parsed = JSON.parse(ev.target.result);
         socketRef.current?.emit('room:importState', parsed);
       } catch (err) {
-        alert('Archivo JSON inválido.');
+        alert(language === 'en' ? 'Invalid JSON file.' : 'Archivo JSON inválido.');
       }
     };
     reader.readAsText(file);
@@ -224,7 +232,7 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden select-none">
-      {/* TOP HEADER BAR: Room Info, 4 Core Process Stepper, Challenge Prompt & Timer */}
+      {/* TOP HEADER BAR */}
       <header className="bg-slate-900/95 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 z-20">
         {/* Brand + Room Code */}
         <div className="flex items-center gap-3">
@@ -237,15 +245,15 @@ export default function App() {
                 LSP Studio 3D
               </span>
               <span className="px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/40 text-amber-300 font-mono text-xs font-bold">
-                SALA: {roomState?.roomCode || sessionUser.roomCode}
+                {t('roomLabel')}: {roomState?.roomCode || sessionUser.roomCode}
               </span>
               <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[11px]">
                 <Users className="w-3 h-3 text-sky-400" />
-                {participantsList.filter((p) => p.online).length} en línea
+                {participantsList.filter((p) => p.online).length} {language === 'en' ? 'online' : 'en línea'}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 truncate max-w-xs sm:max-w-md">
-              {currentTemplate.name}
+              {language === 'en' && currentTemplate.nameEn ? currentTemplate.nameEn : currentTemplate.name}
             </p>
           </div>
         </div>
@@ -254,11 +262,13 @@ export default function App() {
         <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
           {CORE_PHASES.map((phase) => {
             const active = corePhase === phase.id;
+            const pTitle = language === 'en' && phase.shortTitleEn ? phase.shortTitleEn : phase.shortTitle;
+            const pDesc = language === 'en' && phase.descriptionEn ? phase.descriptionEn : phase.description;
             return (
               <button
                 key={phase.id}
                 onClick={() => updateWorkshopState({ corePhase: phase.id })}
-                title={phase.description}
+                title={pDesc}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
                   active
                     ? 'bg-amber-400 text-slate-950 shadow'
@@ -266,14 +276,36 @@ export default function App() {
                 }`}
               >
                 <span>{phase.number}.</span>
-                <span>{phase.shortTitle}</span>
+                <span>{pTitle}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Timer + Ready Button + Export */}
+        {/* Timer + Language Switcher + Ready Button + Export */}
         <div className="flex items-center gap-2">
+          {/* Language Switcher Button */}
+          <div className="flex items-center bg-slate-950 border border-slate-800 px-2 py-1 rounded-xl gap-1">
+            <Languages className="w-3.5 h-3.5 text-amber-400" />
+            <button
+              onClick={() => setLanguage('en')}
+              className={`text-[11px] font-bold px-1.5 py-0.5 rounded transition ${
+                language === 'en' ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              EN
+            </button>
+            <span className="text-slate-700 text-xs">|</span>
+            <button
+              onClick={() => setLanguage('es')}
+              className={`text-[11px] font-bold px-1.5 py-0.5 rounded transition ${
+                language === 'es' ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              ES
+            </button>
+          </div>
+
           <div
             className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono text-sm font-bold ${
               timer.remainingSeconds <= 30 && timer.isRunning
@@ -289,7 +321,7 @@ export default function App() {
                 })
               }
               className="p-1 rounded hover:bg-slate-800 text-slate-200"
-              title={timer.isRunning ? 'Pausar cronómetro' : 'Iniciar cronómetro'}
+              title={timer.isRunning ? t('timerPaused') : t('timerRunning')}
             >
               {timer.isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
             </button>
@@ -301,7 +333,7 @@ export default function App() {
                 })
               }
               className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white"
-              title="Reiniciar cronómetro"
+              title={t('resetTimer')}
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -320,48 +352,52 @@ export default function App() {
             }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
-            {myParticipant?.ready ? '¡Modelo Listo!' : 'Marcar Listo'}
+            {myParticipant?.ready ? (language === 'en' ? 'Model Ready!' : '¡Modelo Listo!') : (language === 'en' ? 'Mark Ready' : 'Marcar Listo')}
           </button>
 
           <button
-            onClick={() => roomState && exportWorkshopToPDF(roomState)}
+            onClick={() => roomState && exportWorkshopToPDF(roomState, language)}
             className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow transition"
-            title="Descargar Informe Metodológico en PDF"
+            title={t('exportPdf')}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Informe PDF</span>
+            <span className="hidden sm:inline">{t('exportPdf')}</span>
           </button>
 
           <button
             onClick={handleLeaveRoom}
             className="p-2 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 transition"
-            title="Cambiar de sala o rol"
+            title={t('leaveSession')}
           >
             <LogOut className="w-4 h-4" />
           </button>
         </div>
       </header>
 
-      {/* ACTIVE CHALLENGE BANNER (Stage Navigation + Core Question) */}
+      {/* ACTIVE CHALLENGE BANNER */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border-b border-slate-800/80 px-4 py-2 flex flex-wrap items-center justify-between gap-3 z-10">
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleStageChange(currentStageIndex - 1)}
             disabled={currentStageIndex === 0}
             className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40"
-            title="Etapa anterior"
+            title="Previous stage"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[11px] font-bold">
-            {APPLICATION_LEVELS.find((l) => l.id === levelMode)?.code || 'Nivel LSP'}
+            {language === 'en'
+              ? (APPLICATION_LEVELS.find((l) => l.id === levelMode)?.codeEn || 'LSP Level')
+              : (APPLICATION_LEVELS.find((l) => l.id === levelMode)?.code || 'Nivel LSP')}
           </span>
-          <span className="text-xs font-bold text-white">{currentStage.title}</span>
+          <span className="text-xs font-bold text-white">
+            {language === 'en' && currentStage.titleEn ? currentStage.titleEn : currentStage.title}
+          </span>
           <button
             onClick={() => handleStageChange(currentStageIndex + 1)}
             disabled={currentStageIndex >= currentTemplate.stages.length - 1}
             className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40"
-            title="Siguiente etapa"
+            title="Next stage"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -370,24 +406,29 @@ export default function App() {
         <div className="flex-1 min-w-[260px] text-xs text-amber-200 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-1.5 flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
           <span className="font-medium leading-snug">
-            <strong className="text-amber-300">Desafío actual: </strong>
+            <strong className="text-amber-300">
+              {language === 'en' ? 'Active Challenge:' : 'Desafío actual:'}{' '}
+            </strong>
             {activeQuestion}
           </span>
         </div>
       </div>
 
-      {/* EMERGENT EVENT ("WHAT-IF" / CISNE NEGRO / TERREMOTO) ALERT BANNER */}
+      {/* EMERGENT EVENT ALERT BANNER */}
       {emergentAlert && (
         <div className="bg-rose-950/95 border-b border-rose-500 px-4 py-2.5 flex items-center justify-between gap-4 z-30 animate-fadeIn">
           <div className="flex items-center gap-3 text-xs">
             <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
             <div>
               <span className="font-extrabold text-rose-200 uppercase tracking-wider mr-2">
-                ⚡ Evento Emergente (Prueba de Estrés Nivel 3): {emergentAlert.title}
+                ⚡ {t('emergentBannerTitle')}: {language === 'en' && emergentAlert.titleEn ? emergentAlert.titleEn : emergentAlert.title}
               </span>
-              <span className="text-rose-100">{emergentAlert.description}</span>
+              <span className="text-rose-100">
+                {language === 'en' && emergentAlert.descriptionEn ? emergentAlert.descriptionEn : emergentAlert.description}
+              </span>
               <span className="block text-amber-300 font-semibold mt-0.5">
-                Pregunta de adaptación: {emergentAlert.impactQuestion}
+                {language === 'en' ? 'Adaptation Question:' : 'Pregunta de adaptación:'}{' '}
+                {language === 'en' && emergentAlert.impactQuestionEn ? emergentAlert.impactQuestionEn : emergentAlert.impactQuestion}
               </span>
             </div>
           </div>
@@ -395,61 +436,73 @@ export default function App() {
             onClick={() => setEmergentAlert(null)}
             className="px-2.5 py-1 rounded-lg bg-rose-800/80 hover:bg-rose-700 text-xs text-white shrink-0"
           >
-            Entendido
+            {t('dismissAlert')}
           </button>
         </div>
       )}
 
-      {/* MAIN WORKSPACE: Left Palette | Center 3D Board | Right Methodology & Collaboration Panel */}
+      {/* MAIN WORKSPACE */}
       <div className="flex-1 flex overflow-hidden">
-        {/* LEFT SIDEBAR: 3D Brick Catalog, LEGO Colors & Connection Types */}
+        {/* LEFT SIDEBAR */}
         <aside className="w-72 bg-slate-900/95 border-r border-slate-800 flex flex-col overflow-y-auto p-3 space-y-4 z-10">
           {/* Color Picker */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                1. Color y Simbolismo
+                1. {t('brickPaletteTitle')}
               </span>
             </div>
             <div className="grid grid-cols-5 gap-2">
-              {LEGO_COLORS.map((c) => (
-                <button
-                  key={c.hex}
-                  onClick={() => {
-                    setSelectedColor(c.hex);
-                    if (selectedBrickId) {
-                      socketRef.current?.emit('brick:update', {
-                        brickId: selectedBrickId,
-                        updates: { color: c.hex },
-                      });
-                    }
-                  }}
-                  title={`${c.name}: ${c.meaning}`}
-                  className={`h-8 rounded-lg border-2 transition ${
-                    selectedColor === c.hex
-                      ? 'border-white scale-105 shadow-md'
-                      : 'border-slate-800 opacity-85 hover:opacity-100'
-                  }`}
-                  style={{ backgroundColor: c.hex }}
-                />
-              ))}
+              {LEGO_COLORS.map((c) => {
+                const cName = language === 'en' && c.nameEn ? c.nameEn : c.name;
+                const cMeaning = language === 'en' && c.meaningEn ? c.meaningEn : c.meaning;
+                return (
+                  <button
+                    key={c.hex}
+                    onClick={() => {
+                      setSelectedColor(c.hex);
+                      if (selectedBrickId) {
+                        socketRef.current?.emit('brick:update', {
+                          brickId: selectedBrickId,
+                          updates: { color: c.hex },
+                        });
+                      }
+                    }}
+                    title={`${cName}: ${cMeaning}`}
+                    className={`h-8 rounded-lg border-2 transition ${
+                      selectedColor === c.hex
+                        ? 'border-white scale-105 shadow-md'
+                        : 'border-slate-800 opacity-85 hover:opacity-100'
+                    }`}
+                    style={{ backgroundColor: c.hex }}
+                  />
+                );
+              })}
             </div>
             <p className="text-[11px] text-slate-400 mt-1.5 leading-tight">
               <strong className="text-slate-200">
-                {LEGO_COLORS.find((c) => c.hex === selectedColor)?.name}:
+                {language === 'en'
+                  ? LEGO_COLORS.find((c) => c.hex === selectedColor)?.nameEn
+                  : LEGO_COLORS.find((c) => c.hex === selectedColor)?.name}:
               </strong>{' '}
-              {LEGO_COLORS.find((c) => c.hex === selectedColor)?.meaning}
+              {language === 'en'
+                ? LEGO_COLORS.find((c) => c.hex === selectedColor)?.meaningEn
+                : LEGO_COLORS.find((c) => c.hex === selectedColor)?.meaning}
             </p>
           </div>
 
           {/* 3D Brick Shapes Catalog */}
           <div className="flex-1">
             <span className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-              2. Catálogo de Piezas 3D LSP
+              2. {t('brickCatalogTitle')}
             </span>
             <div className="grid grid-cols-2 gap-2">
               {BRICK_CATALOG.map((item) => {
                 const isSelected = selectedBrickType === item.id && activeTool === 'place';
+                const iName = language === 'en' && item.nameEn ? item.nameEn : item.name;
+                const iCategory = language === 'en' && item.categoryEn ? item.categoryEn : item.category;
+                const iHint = language === 'en' && item.metaphorHintEn ? item.metaphorHintEn : item.metaphorHint;
+
                 return (
                   <button
                     key={item.id}
@@ -457,7 +510,7 @@ export default function App() {
                       setSelectedBrickType(item.id);
                       setActiveTool('place');
                     }}
-                    title={item.metaphorHint}
+                    title={iHint}
                     className={`p-2.5 rounded-xl border text-left transition flex flex-col justify-between ${
                       isSelected
                         ? 'bg-amber-400/15 border-amber-400 text-white shadow'
@@ -466,16 +519,16 @@ export default function App() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
-                        {item.category}
+                        {iCategory}
                       </span>
                       <span
                         className="w-3 h-3 rounded-sm"
                         style={{ backgroundColor: selectedColor }}
                       />
                     </div>
-                    <div className="text-xs font-bold mt-1.5 leading-snug">{item.name}</div>
+                    <div className="text-xs font-bold mt-1.5 leading-snug">{iName}</div>
                     <div className="text-[10px] text-slate-400 mt-1 line-clamp-2">
-                      {item.metaphorHint}
+                      {iHint}
                     </div>
                   </button>
                 );
@@ -486,32 +539,36 @@ export default function App() {
           {/* Level 3 Connection Kit Selector */}
           <div className="pt-2 border-t border-slate-800">
             <span className="block text-xs font-bold uppercase tracking-wider text-emerald-400 mb-1.5">
-              3. Conectores Sistémicos (Nivel 3)
+              3. {language === 'en' ? 'Systemic Links (Level 3)' : 'Conectores Sistémicos (Nivel 3)'}
             </span>
             <div className="space-y-1.5">
-              {CONNECTION_TYPES.map((ct) => (
-                <button
-                  key={ct.id}
-                  onClick={() => {
-                    setConnectionType(ct);
-                    setActiveTool('connect');
-                  }}
-                  className={`w-full p-2 rounded-xl border text-left text-xs transition flex items-center gap-2 ${
-                    activeTool === 'connect' && connectionType.id === ct.id
-                      ? 'bg-emerald-500/20 border-emerald-400 text-white'
-                      : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
-                  }`}
-                >
-                  <span
-                    className="w-3 h-3 rounded-full shrink-0"
-                    style={{ backgroundColor: ct.color }}
-                  />
-                  <div>
-                    <div className="font-bold">{ct.name}</div>
-                    <div className="text-[10px] text-slate-400">{ct.description}</div>
-                  </div>
-                </button>
-              ))}
+              {CONNECTION_TYPES.map((ct) => {
+                const ctName = language === 'en' && ct.nameEn ? ct.nameEn : ct.name;
+                const ctDesc = language === 'en' && ct.descriptionEn ? ct.descriptionEn : ct.description;
+                return (
+                  <button
+                    key={ct.id}
+                    onClick={() => {
+                      setConnectionType(ct);
+                      setActiveTool('connect');
+                    }}
+                    className={`w-full p-2 rounded-xl border text-left text-xs transition flex items-center gap-2 ${
+                      activeTool === 'connect' && connectionType.id === ct.id
+                        ? 'bg-emerald-500/20 border-emerald-400 text-white'
+                        : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    <span
+                      className="w-3 h-3 rounded-full shrink-0"
+                      style={{ backgroundColor: ct.color }}
+                    />
+                    <div>
+                      <div className="font-bold">{ctName}</div>
+                      <div className="text-[10px] text-slate-400">{ctDesc}</div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -526,7 +583,7 @@ export default function App() {
               className="flex-1 py-1.5 px-2 bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              Limpiar Mis Piezas
+              {language === 'en' ? 'Clear My Bricks' : 'Limpiar Mis Piezas'}
             </button>
           </div>
         </aside>
@@ -560,7 +617,7 @@ export default function App() {
           />
         </main>
 
-        {/* RIGHT SIDEBAR: Stories, Red Bricks, Reflections & Facilitator Control Panel */}
+        {/* RIGHT SIDEBAR */}
         <aside className="w-80 sm:w-96 bg-slate-900/95 border-l border-slate-800 flex flex-col z-10">
           {/* Tabs */}
           <div className="grid grid-cols-4 border-b border-slate-800 bg-slate-950 p-1 gap-1 text-[11px] font-bold">
@@ -573,7 +630,7 @@ export default function App() {
               }`}
             >
               <MessageSquare className="w-3.5 h-3.5" />
-              <span>Historias</span>
+              <span>{language === 'en' ? 'Stories' : 'Historias'}</span>
             </button>
 
             <button
@@ -585,7 +642,7 @@ export default function App() {
               }`}
             >
               <Star className="w-3.5 h-3.5" />
-              <span>Ladrillo Rojo</span>
+              <span>{language === 'en' ? 'Red Brick' : 'Ladrillo Rojo'}</span>
             </button>
 
             <button
@@ -597,7 +654,7 @@ export default function App() {
               }`}
             >
               <Lightbulb className="w-3.5 h-3.5" />
-              <span>Reflexión</span>
+              <span>{language === 'en' ? 'Reflect' : 'Reflexión'}</span>
             </button>
 
             <button
@@ -609,22 +666,24 @@ export default function App() {
               }`}
             >
               <Crown className="w-3.5 h-3.5" />
-              <span>Facilitador</span>
+              <span>{language === 'en' ? 'Facilitator' : 'Facilitador'}</span>
             </button>
           </div>
 
           {/* Tab Content */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
-            {/* TAB 1: STORIES & PARTICIPANT SPOTLIGHT (Phase 3: Share) */}
+            {/* TAB 1: STORIES & PARTICIPANT SPOTLIGHT */}
             {rightTab === 'stories' && (
               <div className="space-y-4">
                 <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
                   <h3 className="font-bold text-white text-xs flex items-center gap-1.5">
                     <Users className="w-4 h-4 text-sky-400" />
-                    Participantes en la Mesa (Spotlight 3D)
+                    {language === 'en' ? 'Participants at the Table (Spotlight 3D)' : 'Participantes en la Mesa (Spotlight 3D)'}
                   </h3>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    Haz clic en &ldquo;Enfocar&rdquo; para dirigir la cámara 3D al modelo de quien está compartiendo su historia.
+                    {language === 'en'
+                      ? 'Click "Spotlight" to focus the 3D camera on the model being shared.'
+                      : 'Haz clic en "Enfocar" para dirigir la cámara 3D al modelo de quien está compartiendo su historia.'}
                   </p>
                   <div className="mt-2.5 space-y-1.5">
                     {participantsList.map((p) => {
@@ -645,14 +704,14 @@ export default function App() {
                             <div>
                               <span className="font-semibold text-white">{p.name}</span>
                               <span className="text-[10px] text-slate-400 ml-1.5">
-                                ({brickCount} pzs)
+                                ({brickCount} {language === 'en' ? 'bricks' : 'pzs'})
                               </span>
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5">
                             {p.ready && (
                               <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">
-                                Listo
+                                {language === 'en' ? 'Ready' : 'Listo'}
                               </span>
                             )}
                             <button
@@ -668,7 +727,9 @@ export default function App() {
                               }`}
                             >
                               <Eye className="w-3 h-3" />
-                              {isSpotlight ? 'Enfocado' : 'Enfocar'}
+                              {isSpotlight
+                                ? (language === 'en' ? 'Spotlighted' : 'Enfocado')
+                                : (language === 'en' ? 'Spotlight' : 'Enfocar')}
                             </button>
                           </div>
                         </div>
@@ -684,20 +745,20 @@ export default function App() {
                 >
                   <h3 className="font-bold text-amber-400 flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4" />
-                    Documentar la Historia de tu Modelo (Fase 3)
+                    {t('storiesTitle')}
                   </h3>
                   <input
                     type="text"
                     value={storyTitle}
                     onChange={(e) => setStoryTitle(e.target.value)}
-                    placeholder="Título de tu modelo (ej: Gobernanza Policéntrica 2050)"
+                    placeholder={t('myStoryTitlePlaceholder')}
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:border-amber-400 focus:outline-none"
                   />
                   <textarea
                     rows={3}
                     value={storyNarrative}
                     onChange={(e) => setStoryNarrative(e.target.value)}
-                    placeholder="Cuenta la historia de lo que construiste: ¿Qué representan las piezas, colores y conexiones?"
+                    placeholder={t('myStoryNarrativePlaceholder')}
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:border-amber-400 focus:outline-none resize-none"
                   />
                   <button
@@ -705,18 +766,18 @@ export default function App() {
                     className="w-full py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-lg flex items-center justify-center gap-1.5 transition"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    Publicar Historia en la Mesa
+                    {t('submitStoryBtn')}
                   </button>
                 </form>
 
                 {/* Published Stories Feed */}
                 <div className="space-y-2">
                   <h4 className="font-bold text-slate-300 uppercase tracking-wider text-[11px]">
-                    Historias Compartidas ({(roomState?.stories || []).length})
+                    {language === 'en' ? 'Shared Narratives' : 'Historias Compartidas'} ({(roomState?.stories || []).length})
                   </h4>
                   {(roomState?.stories || []).length === 0 ? (
                     <p className="text-slate-500 italic">
-                      Aún no se han registrado historias en esta etapa.
+                      {t('noStoriesYet')}
                     </p>
                   ) : (
                     (roomState?.stories || []).map((st) => (
@@ -727,11 +788,11 @@ export default function App() {
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-amber-300">{st.title}</span>
                           <span className="text-[10px] text-slate-400">
-                            Etapa {(st.stageIndex || 0) + 1}
+                            {t('stageLabel')} {(st.stageIndex || 0) + 1}
                           </span>
                         </div>
                         <div className="text-[11px] text-sky-400 font-semibold">
-                          Por: {st.participantName}
+                          {language === 'en' ? 'By' : 'Por'}: {st.participantName}
                         </div>
                         <p className="text-slate-200 leading-relaxed mt-1">{st.narrative}</p>
                       </div>
@@ -741,29 +802,30 @@ export default function App() {
               </div>
             )}
 
-            {/* TAB 2: RED BRICKS ("LADRILLOS ROJOS") & SYSTEM CONNECTIONS */}
+            {/* TAB 2: RED BRICKS & SYSTEM CONNECTIONS */}
             {rightTab === 'metaphors' && (
               <div className="space-y-4">
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
                   <h3 className="font-bold text-amber-300 flex items-center gap-1.5">
                     <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    Ladrillos Rojos (Puente Nivel 1 → Nivel 2)
+                    {language === 'en' ? 'Red Bricks (Level 1 → Level 2 Transition)' : 'Ladrillos Rojos (Puente Nivel 1 → Nivel 2)'}
                   </h3>
                   <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
-                    En LEGO Serious Play, para construir un <strong>Modelo Compartido</strong> sin
-                    votar ni promediar, cada participante elige su pieza más esencial (&ldquo;Ladrillo
-                    Rojo&rdquo;) para integrarla en el centro de la mesa.
+                    {language === 'en'
+                      ? 'In LEGO Serious Play, to co-create a Shared Model without voting or compromising, each participant selects their essential "Red Brick" to incorporate into the central co-constructed landscape.'
+                      : 'En LEGO Serious Play, para construir un Modelo Compartido sin votar ni promediar, cada participante elige su pieza más esencial ("Ladrillo Rojo") para integrarla en el centro de la mesa.'}
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <h4 className="font-bold text-slate-300 uppercase tracking-wider text-[11px]">
-                    Piezas Esenciales Marcadas ({redBricksList.length})
+                    {language === 'en' ? 'Designated Red Bricks' : 'Piezas Esenciales Marcadas'} ({redBricksList.length})
                   </h4>
                   {redBricksList.length === 0 ? (
                     <p className="text-slate-500 italic">
-                      Haz clic sobre cualquier pieza 3D en el tablero y pulsa &ldquo;Marcar como
-                      Ladrillo Rojo&rdquo; para destacarla con un anillo dorado.
+                      {language === 'en'
+                        ? 'Click on any brick on the 3D table and select "Designate as Core Red Brick" to highlight it with a golden ring.'
+                        : 'Haz clic sobre cualquier pieza 3D en el tablero y pulsa "Marcar como Ladrillo Rojo" para destacarla con un anillo dorado.'}
                     </p>
                   ) : (
                     redBricksList.map((b) => (
@@ -774,7 +836,7 @@ export default function App() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-amber-300">
-                            ★ {b.metaphorTitle || 'Pieza Esencial sin título'}
+                            ★ {b.metaphorTitle || (language === 'en' ? 'Untitled Core Brick' : 'Pieza Esencial sin título')}
                           </span>
                           <span className="text-[10px] text-slate-400">{b.ownerName}</span>
                         </div>
@@ -790,12 +852,13 @@ export default function App() {
                 <div className="pt-3 border-t border-slate-800 space-y-2">
                   <h4 className="font-bold text-emerald-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                     <Link2 className="w-3.5 h-3.5" />
-                    Vínculos Sistémicos Nivel 3 ({(roomState?.connections || []).length})
+                    {language === 'en' ? 'Systemic Links (Level 3)' : 'Vínculos Sistémicos Nivel 3'} ({(roomState?.connections || []).length})
                   </h4>
                   {(roomState?.connections || []).length === 0 ? (
                     <p className="text-slate-500 italic">
-                      Usa la herramienta &ldquo;Conectar Sistema&rdquo; arriba a la izquierda para
-                      unir dos bloques con tubos 3D.
+                      {language === 'en'
+                        ? 'Use the "Connect" tool in the top bar to draw 3D systemic relationship tubes between elements.'
+                        : 'Usa la herramienta "Conectar" arriba a la izquierda para unir dos bloques con tubos 3D.'}
                     </p>
                   ) : (
                     (roomState?.connections || []).map((c) => {
@@ -813,8 +876,8 @@ export default function App() {
                             />
                             <strong className="text-white">{c.label}</strong>
                             <div className="text-[11px] text-slate-400 mt-0.5">
-                              {fromB?.metaphorTitle || 'Pieza A'} →{' '}
-                              {toB?.metaphorTitle || 'Pieza B'}
+                              {fromB?.metaphorTitle || (language === 'en' ? 'Brick A' : 'Pieza A')} →{' '}
+                              {toB?.metaphorTitle || (language === 'en' ? 'Brick B' : 'Pieza B')}
                             </div>
                           </div>
                           <button
@@ -824,7 +887,7 @@ export default function App() {
                               })
                             }
                             className="p-1 text-slate-500 hover:text-rose-400"
-                            title="Eliminar conexión"
+                            title="Delete link"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -836,7 +899,7 @@ export default function App() {
               </div>
             )}
 
-            {/* TAB 3: REFLECTIONS & SIMPLE GUIDING PRINCIPLES (Phase 4) */}
+            {/* TAB 3: REFLECTIONS & SIMPLE GUIDING PRINCIPLES */}
             {rightTab === 'reflect' && (
               <div className="space-y-4">
                 <form
@@ -845,42 +908,41 @@ export default function App() {
                 >
                   <h3 className="font-bold text-amber-400 flex items-center gap-1.5">
                     <Lightbulb className="w-4 h-4" />
-                    Cristalizar Principio Rector Simple (Fase 4)
+                    {t('reflectionsTitle')}
                   </h3>
                   <select
                     value={reflectionCategory}
                     onChange={(e) => setReflectionCategory(e.target.value)}
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white"
                   >
-                    <option value="Principio Rector Simple">
-                      Principio Rector Simple (Simple Guiding Principle)
+                    <option value={t('categoryGuidingPrinciple')}>
+                      {t('categoryGuidingPrinciple')}
                     </option>
-                    <option value="Patrón Común Identificado">Patrón Común Identificado</option>
-                    <option value="Compromiso / Acción Inmediata">
-                      Compromiso / Acción Inmediata
+                    <option value={t('categoryInsight')}>
+                      {t('categoryInsight')}
                     </option>
-                    <option value="Vulnerabilidad / Punto Ciego">
-                      Vulnerabilidad / Punto Ciego
+                    <option value={t('categoryCommitment')}>
+                      {t('categoryCommitment')}
                     </option>
                   </select>
                   <textarea
                     rows={3}
                     value={reflectionText}
                     onChange={(e) => setReflectionText(e.target.value)}
-                    placeholder="Ej: 'Ante cualquier crisis territorial, priorizaremos la red comunitaria local antes de centralizar decisiones'..."
+                    placeholder={t('reflectionTextPlaceholder')}
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:border-amber-400 focus:outline-none resize-none"
                   />
                   <button
                     type="submit"
                     className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg transition"
                   >
-                    Registrar Aprendizaje Colectivo
+                    {t('addReflectionBtn')}
                   </button>
                 </form>
 
                 <div className="space-y-2">
                   <h4 className="font-bold text-slate-300 uppercase tracking-wider text-[11px]">
-                    Acuerdos y Principios Rectores ({(roomState?.reflections || []).length})
+                    {language === 'en' ? 'Formulated Principles' : 'Acuerdos y Principios Rectores'} ({(roomState?.reflections || []).length})
                   </h4>
                   {(roomState?.reflections || []).map((r) => (
                     <div
@@ -900,27 +962,31 @@ export default function App() {
               </div>
             )}
 
-            {/* TAB 4: FACILITATOR CONTROLS & EMERGENT "WHAT-IF" EVENTS */}
+            {/* TAB 4: FACILITATOR CONTROLS */}
             {rightTab === 'facilitator' && (
               <div className="space-y-4">
                 <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
                   <h3 className="font-bold text-amber-400 flex items-center gap-1.5">
                     <Crown className="w-4 h-4" />
-                    Guía del Facilitador en esta Etapa
+                    {language === 'en' ? 'Facilitator Guide for this Stage' : 'Guía del Facilitador en esta Etapa'}
                   </h3>
-                  <p className="text-slate-300 leading-relaxed">{currentStage.facilitatorTip}</p>
+                  <p className="text-slate-300 leading-relaxed">
+                    {language === 'en' && currentStage.facilitatorTipEn
+                      ? currentStage.facilitatorTipEn
+                      : currentStage.facilitatorTip}
+                  </p>
                 </div>
 
                 {/* Custom Challenge Prompt Override */}
                 <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
                   <label className="block font-bold text-white">
-                    Personalizar Pregunta Desafío en Vivo
+                    {t('customQuestionLabel')}
                   </label>
                   <textarea
                     rows={2}
                     value={customQuestionInput}
                     onChange={(e) => setCustomQuestionInput(e.target.value)}
-                    placeholder="Escribe una pregunta personalizada para el grupo..."
+                    placeholder={t('customQuestionPlaceholder')}
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white resize-none"
                   />
                   <div className="flex gap-2">
@@ -930,7 +996,7 @@ export default function App() {
                       }
                       className="flex-1 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-lg"
                     >
-                      Lanzar Pregunta
+                      {t('updateQuestionBtn')}
                     </button>
                     <button
                       onClick={() => {
@@ -939,20 +1005,19 @@ export default function App() {
                       }}
                       className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg"
                     >
-                      Restaurar
+                      {language === 'en' ? 'Reset' : 'Restaurar'}
                     </button>
                   </div>
                 </div>
 
-                {/* Emergent Events ("What-If" / Terremoto / Cisnes Negros) */}
+                {/* Emergent Events */}
                 <div className="bg-slate-950 border border-rose-500/40 rounded-xl p-3 space-y-2.5">
                   <h3 className="font-bold text-rose-400 flex items-center gap-1.5">
                     <Zap className="w-4 h-4" />
-                    Simulador de Eventos Emergentes (Nivel 3)
+                    {t('triggerEmergentTitle')}
                   </h3>
                   <p className="text-[11px] text-slate-400">
-                    Dispara un escenario imprevisto en todas las pantallas para poner a prueba la
-                    resiliencia del sistema construido:
+                    {t('triggerEmergentDesc')}
                   </p>
                   <div className="space-y-1.5">
                     {(currentTemplate.emergentPresets || []).map((ev, i) => (
@@ -961,9 +1026,11 @@ export default function App() {
                         onClick={() => socketRef.current?.emit('emergent:trigger', ev)}
                         className="w-full p-2 rounded-lg bg-rose-950/50 hover:bg-rose-900/60 border border-rose-500/40 text-left transition"
                       >
-                        <div className="font-bold text-rose-200">⚡ {ev.title}</div>
+                        <div className="font-bold text-rose-200">
+                          ⚡ {language === 'en' && ev.titleEn ? ev.titleEn : ev.title}
+                        </div>
                         <div className="text-[10px] text-rose-300/80 mt-0.5">
-                          {ev.description}
+                          {language === 'en' && ev.descriptionEn ? ev.descriptionEn : ev.description}
                         </div>
                       </button>
                     ))}
@@ -975,14 +1042,14 @@ export default function App() {
                       type="text"
                       value={customEmergentTitle}
                       onChange={(e) => setCustomEmergentTitle(e.target.value)}
-                      placeholder="Título de evento personalizado..."
+                      placeholder={language === 'en' ? 'Custom event title...' : 'Título de evento personalizado...'}
                       className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white"
                     />
                     <input
                       type="text"
                       value={customEmergentQuestion}
                       onChange={(e) => setCustomEmergentQuestion(e.target.value)}
-                      placeholder="Pregunta de impacto para el grupo..."
+                      placeholder={language === 'en' ? 'Impact question for the group...' : 'Pregunta de impacto para el grupo...'}
                       className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white"
                     />
                     <button
@@ -990,40 +1057,45 @@ export default function App() {
                         if (!customEmergentTitle.trim()) return;
                         socketRef.current?.emit('emergent:trigger', {
                           title: customEmergentTitle,
+                          titleEn: customEmergentTitle,
                           description:
                             customEmergentDesc ||
-                            'Factor disruptivo introducido por el facilitador.',
+                            (language === 'en' ? 'Disruptive factor introduced by facilitator.' : 'Factor disruptivo introducido por el facilitador.'),
+                          descriptionEn: customEmergentDesc || 'Disruptive factor introduced by facilitator.',
                           impactQuestion:
                             customEmergentQuestion ||
-                            '¿Cómo se adapta nuestro modelo ante este cambio?',
+                            (language === 'en' ? 'How does our model adapt to this sudden change?' : '¿Cómo se adapta nuestro modelo ante este cambio?'),
+                          impactQuestionEn: customEmergentQuestion || 'How does our model adapt to this sudden change?',
                         });
                         setCustomEmergentTitle('');
                         setCustomEmergentQuestion('');
                       }}
                       className="w-full py-1.5 bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold rounded-lg"
                     >
-                      Disparar Evento Personalizado
+                      {language === 'en' ? 'Trigger Custom Shock' : 'Disparar Evento Personalizado'}
                     </button>
                   </div>
                 </div>
 
                 {/* Backup JSON Export / Import */}
                 <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
-                  <h4 className="font-bold text-slate-300">Respaldo y Exportación</h4>
+                  <h4 className="font-bold text-slate-300">
+                    {language === 'en' ? 'Backup & Import' : 'Respaldo y Exportación'}
+                  </h4>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => roomState && exportWorkshopToJSON(roomState)}
                       className="py-2 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-semibold flex items-center justify-center gap-1.5"
                     >
                       <Download className="w-3.5 h-3.5 text-sky-400" />
-                      Guardar JSON
+                      {t('exportJson')}
                     </button>
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       className="py-2 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-semibold flex items-center justify-center gap-1.5"
                     >
                       <Upload className="w-3.5 h-3.5 text-amber-400" />
-                      Cargar JSON
+                      {t('importJson')}
                     </button>
                     <input
                       ref={fileInputRef}
@@ -1042,4 +1114,3 @@ export default function App() {
     </div>
   );
 }
-

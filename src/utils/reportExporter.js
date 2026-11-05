@@ -7,15 +7,17 @@ export function exportWorkshopToJSON(roomState) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `LSP_Taller_${roomState.roomCode}_${new Date().toISOString().slice(0, 10)}.json`;
+  link.download = `LSP_Workshop_${roomState.roomCode}_${new Date().toISOString().slice(0, 10)}.json`;
   link.click();
   URL.revokeObjectURL(url);
 }
 
-export function exportWorkshopToPDF(roomState) {
+export function exportWorkshopToPDF(roomState, language = 'en') {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const template =
     WORKSHOP_TEMPLATES.find((t) => t.id === roomState.templateId) || WORKSHOP_TEMPLATES[0];
+
+  const isEn = language === 'en';
 
   let y = 18;
   const pageWidth = 210;
@@ -35,18 +37,26 @@ export function exportWorkshopToPDF(roomState) {
   doc.setTextColor(251, 191, 36);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('INFORME METODOLÓGICO — LEGO® SERIOUS PLAY® VIRTUAL 3D', margin, 13);
+  doc.text(
+    isEn
+      ? 'METHODOLOGICAL REPORT — LEGO® SERIOUS PLAY® VIRTUAL 3D'
+      : 'INFORME METODOLÓGICO — LEGO® SERIOUS PLAY® VIRTUAL 3D',
+    margin,
+    13
+  );
 
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(15);
-  doc.text(template.name.slice(0, 62), margin, 22);
+  doc.setFontSize(14);
+  const templateName = isEn && template.nameEn ? template.nameEn : template.name;
+  doc.text(templateName.slice(0, 65), margin, 22);
 
   doc.setFontSize(9);
   doc.setTextColor(148, 163, 184);
+  const dateFormatted = new Date().toLocaleDateString(isEn ? 'en-US' : 'es-ES');
   doc.text(
-    `Código de Sala: ${roomState.roomCode}   |   Fecha: ${new Date().toLocaleDateString('es-ES')}   |   Participantes: ${
+    `${isEn ? 'Room Code' : 'Código de Sala'}: ${roomState.roomCode}   |   ${isEn ? 'Date' : 'Fecha'}: ${dateFormatted}   |   ${isEn ? 'Participants' : 'Participantes'}: ${
       Object.keys(roomState.participants || {}).length
-    }   |   Piezas 3D: ${(roomState.bricks || []).length}`,
+    }   |   ${isEn ? '3D Bricks' : 'Piezas 3D'}: ${(roomState.bricks || []).length}`,
     margin,
     30
   );
@@ -57,19 +67,22 @@ export function exportWorkshopToPDF(roomState) {
   doc.setTextColor(15, 23, 42);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('1. Participantes y Actores en la Mesa', margin, y);
+  doc.text(isEn ? '1. Workshop Participants' : '1. Participantes y Actores en la Mesa', margin, y);
   y += 6;
 
   doc.setFontSize(9.5);
   doc.setFont('helvetica', 'normal');
   const participantsList = Object.values(roomState.participants || {});
   if (participantsList.length === 0) {
-    doc.text('Sin participantes registrados.', margin, y);
+    doc.text(isEn ? 'No participants registered.' : 'Sin participantes registrados.', margin, y);
     y += 6;
   } else {
     participantsList.forEach((p) => {
       checkPageBreak(8);
-      const roleLabel = p.role === 'facilitator' ? 'Facilitador LSP' : 'Participante Constructor';
+      const roleLabel =
+        p.role === 'facilitator'
+          ? isEn ? 'LSP Facilitator' : 'Facilitador LSP'
+          : isEn ? 'Building Participant' : 'Participante Constructor';
       doc.text(`• ${p.name} (${roleLabel})`, margin + 3, y);
       y += 5.5;
     });
@@ -77,90 +90,124 @@ export function exportWorkshopToPDF(roomState) {
 
   y += 4;
 
-  // Section 2: Key Metaphors & Red Bricks (Ladrillos Rojos)
-  checkPageBreak(20);
+  // Section 2: Key Metaphors & Red Bricks
+  checkPageBreak(22);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('2. Inventario de Metáforas 3D y "Ladrillos Rojos" (Piezas Esenciales)', margin, y);
+  doc.text(
+    isEn
+      ? '2. Core Red Bricks (Essential Non-Negotiables)'
+      : '2. Ladrillos Rojos Seleccionados (Núcleos Innegociables)',
+    margin,
+    y
+  );
   y += 6;
 
-  const bricksWithMetaphor = (roomState.bricks || []).filter(
-    (b) => b.metaphorTitle || b.metaphorDesc || b.isRedBrick
-  );
-
-  if (bricksWithMetaphor.length === 0) {
+  const redBricks = (roomState.bricks || []).filter((b) => b.isRedBrick);
+  if (redBricks.length === 0) {
     doc.setFontSize(9.5);
     doc.setFont('helvetica', 'italic');
-    doc.text('No se etiquetaron metáforas individuales en las piezas.', margin, y);
+    doc.text(
+      isEn
+        ? 'No Red Bricks were designated during this session.'
+        : 'No se marcaron Ladrillos Rojos en esta sesión.',
+      margin,
+      y
+    );
     y += 7;
   } else {
-    bricksWithMetaphor.forEach((b, idx) => {
-      checkPageBreak(18);
-      doc.setFontSize(10);
+    redBricks.forEach((rb, idx) => {
+      checkPageBreak(14);
+      doc.setFontSize(9.5);
       doc.setFont('helvetica', 'bold');
-      const redTag = b.isRedBrick ? ' [★ LADRILLO ROJO ESENCIAL]' : '';
       doc.text(
-        `${idx + 1}. ${b.metaphorTitle || 'Pieza con significado'} — Autor: ${b.ownerName}${redTag}`,
+        `• [${rb.ownerName || (isEn ? 'Participant' : 'Participante')}]: ${
+          rb.metaphorTitle || (isEn ? 'Untitled Essential Brick' : 'Pieza Esencial sin título')
+        }`,
         margin + 2,
         y
       );
-      y += 5;
-
-      if (b.metaphorDesc) {
-        doc.setFontSize(9);
+      y += 4.5;
+      if (rb.metaphorDesc) {
         doc.setFont('helvetica', 'normal');
-        const splitDesc = doc.splitTextToSize(`Significado: ${b.metaphorDesc}`, contentWidth - 6);
-        doc.text(splitDesc, margin + 5, y);
-        y += splitDesc.length * 4.5 + 2;
+        const splitText = doc.splitTextToSize(rb.metaphorDesc, contentWidth - 8);
+        doc.text(splitText, margin + 6, y);
+        y += splitText.length * 4.5 + 2;
       }
     });
   }
 
   y += 4;
 
-  // Section 3: Connections (Level 3 Systems)
+  // Section 3: Systemic Connections
   checkPageBreak(20);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('3. Mapa de Conexiones Sistémicas (Nivel 3: Paisaje)', margin, y);
+  doc.text(
+    isEn
+      ? '3. Systemic Links & Relational Dynamics (Level 3 Landscape)'
+      : '3. Conexiones Sistémicas y Vínculos entre Modelos (Nivel 3)',
+    margin,
+    y
+  );
   y += 6;
 
   const connections = roomState.connections || [];
   if (connections.length === 0) {
     doc.setFontSize(9.5);
     doc.setFont('helvetica', 'italic');
-    doc.text('No se registraron conexiones entre modelos.', margin, y);
+    doc.text(
+      isEn
+        ? 'No systemic links were placed during this session.'
+        : 'No se trazaron conexiones en esta sesión.',
+      margin,
+      y
+    );
     y += 7;
   } else {
-    connections.forEach((c, idx) => {
-      checkPageBreak(12);
+    connections.forEach((c) => {
+      checkPageBreak(10);
       const fromB = (roomState.bricks || []).find((b) => b.id === c.fromBrickId);
       const toB = (roomState.bricks || []).find((b) => b.id === c.toBrickId);
-      const fromName = fromB?.metaphorTitle || 'Pieza A';
-      const toName = toB?.metaphorTitle || 'Pieza B';
       doc.setFontSize(9.5);
       doc.setFont('helvetica', 'normal');
-      const line = `${idx + 1}. [${c.label || c.type}]  ${fromName}  --->  ${toName}`;
-      const splitLine = doc.splitTextToSize(line, contentWidth - 4);
-      doc.text(splitLine, margin + 2, y);
-      y += splitLine.length * 5;
+      doc.text(
+        `• [${c.type?.toUpperCase()}] "${c.label || (isEn ? 'Connection' : 'Vínculo')}": (${
+          fromB?.metaphorTitle || (isEn ? 'Node A' : 'Nodo A')
+        }) ↔ (${toB?.metaphorTitle || (isEn ? 'Node B' : 'Nodo B')})`,
+        margin + 3,
+        y
+      );
+      y += 5.5;
     });
   }
 
   y += 4;
 
-  // Section 4: Participant Stories (Phase 3: Share)
+  // Section 4: Participant Stories
   checkPageBreak(20);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('4. Narrativas e Historias Compartidas (Fase 3: Compartir)', margin, y);
+  doc.text(
+    isEn
+      ? '4. Participant Narratives & Storytelling (Phase 3: Share)'
+      : '4. Narrativas e Historias Compartidas (Fase 3: Compartir)',
+    margin,
+    y
+  );
   y += 6;
 
   const stories = roomState.stories || [];
   if (stories.length === 0) {
     doc.setFontSize(9.5);
     doc.setFont('helvetica', 'italic');
-    doc.text('No se documentaron historias escritas durante la sesión.', margin, y);
+    doc.text(
+      isEn
+        ? 'No stories were recorded in the session.'
+        : 'No se documentaron historias escritas durante la sesión.',
+      margin,
+      y
+    );
     y += 7;
   } else {
     stories.forEach((s, idx) => {
@@ -168,9 +215,9 @@ export function exportWorkshopToPDF(roomState) {
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.text(
-        `${idx + 1}. ${s.title || 'Modelo Narrativo'} — ${s.participantName} (Etapa ${
-          (s.stageIndex || 0) + 1
-        })`,
+        `${idx + 1}. ${s.title || (isEn ? 'Model Narrative' : 'Modelo Narrativo')} — ${
+          s.participantName
+        } (${isEn ? 'Stage' : 'Etapa'} ${(s.stageIndex || 0) + 1})`,
         margin + 2,
         y
       );
@@ -186,25 +233,37 @@ export function exportWorkshopToPDF(roomState) {
 
   y += 4;
 
-  // Section 5: Reflections & Simple Guiding Principles (Phase 4)
+  // Section 5: Reflections & Simple Guiding Principles
   checkPageBreak(20);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('5. Reflexiones y Principios Rectores Simples (Simple Guiding Principles)', margin, y);
+  doc.text(
+    isEn
+      ? '5. Simple Guiding Principles (SGP) & Shared Takeaways (Phase 4: Reflect)'
+      : '5. Reflexiones y Principios Rectores Simples (Simple Guiding Principles)',
+    margin,
+    y
+  );
   y += 6;
 
   const reflections = roomState.reflections || [];
   if (reflections.length === 0) {
     doc.setFontSize(9.5);
     doc.setFont('helvetica', 'italic');
-    doc.text('Sin principios rectores registrados.', margin, y);
+    doc.text(
+      isEn
+        ? 'No guiding principles or reflections recorded.'
+        : 'Sin principios rectores registrados.',
+      margin,
+      y
+    );
     y += 7;
   } else {
-    reflections.forEach((r, idx) => {
+    reflections.forEach((r) => {
       checkPageBreak(14);
       doc.setFontSize(9.5);
       doc.setFont('helvetica', 'bold');
-      doc.text(`• [${r.category || 'Principio Rector'}] ${r.authorName}:`, margin + 2, y);
+      doc.text(`• [${r.category || (isEn ? 'Principle' : 'Principio')}] ${r.authorName}:`, margin + 2, y);
       y += 4.5;
       doc.setFont('helvetica', 'normal');
       const splitRef = doc.splitTextToSize(r.text || '', contentWidth - 8);
@@ -219,19 +278,28 @@ export function exportWorkshopToPDF(roomState) {
     checkPageBreak(20);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('6. Eventos Emergentes ("What-If" / Escenarios de Estrés Simulados)', margin, y);
+    doc.text(
+      isEn
+        ? '6. Emergent "What-If" Disruptions Simulated'
+        : '6. Eventos Emergentes ("What-If" / Escenarios de Estrés Simulados)',
+      margin,
+      y
+    );
     y += 6;
 
     roomState.emergentEvents.forEach((ev, idx) => {
       checkPageBreak(16);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text(`${idx + 1}. ${ev.title}`, margin + 2, y);
+      const evTitle = isEn && ev.titleEn ? ev.titleEn : ev.title;
+      const evDesc = isEn && ev.descriptionEn ? ev.descriptionEn : ev.description;
+      const evImpact = isEn && ev.impactQuestionEn ? ev.impactQuestionEn : ev.impactQuestion;
+      doc.text(`${idx + 1}. ${evTitle}`, margin + 2, y);
       y += 4.5;
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       const splitEv = doc.splitTextToSize(
-        `${ev.description} — Pregunta de impacto: ${ev.impactQuestion}`,
+        `${evDesc} — ${isEn ? 'Impact Question' : 'Pregunta de impacto'}: ${evImpact}`,
         contentWidth - 6
       );
       doc.text(splitEv, margin + 5, y);
@@ -239,6 +307,5 @@ export function exportWorkshopToPDF(roomState) {
     });
   }
 
-  doc.save(`Informe_LSP_${roomState.roomCode}_${new Date().toISOString().slice(0, 10)}.pdf`);
+  doc.save(`LSP_Report_${roomState.roomCode}_${new Date().toISOString().slice(0, 10)}.pdf`);
 }
-

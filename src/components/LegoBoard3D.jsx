@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { BRICK_CATALOG } from '../data/lspMethodology';
+import { useLanguage } from '../context/LanguageContext';
 import {
   RotateCw,
   Trash2,
@@ -50,7 +51,7 @@ function createLegoBrickMesh(brickData, isSelected, isConnectSource) {
     torso.receiveShadow = true;
     group.add(torso);
 
-    // Head (Yellow classic or contrasting)
+    // Head
     const headGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.65, 20);
     const headMat = new THREE.MeshStandardMaterial({ color: 0xffd500, roughness: 0.25 });
     const head = new THREE.Mesh(headGeo, headMat);
@@ -71,118 +72,136 @@ function createLegoBrickMesh(brickData, isSelected, isConnectSource) {
     cyl.receiveShadow = true;
     group.add(cyl);
 
-    const studGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.2, 16);
+    const studGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.2, 16);
     const stud = new THREE.Mesh(studGeo, material);
     stud.position.y = h + 0.1;
     group.add(stud);
+  } else if (catalogItem.shape === 'arch') {
+    const mainGeo = new THREE.BoxGeometry(w, h, d);
+    const main = new THREE.Mesh(mainGeo, material);
+    main.position.y = h / 2;
+    main.castShadow = true;
+    main.receiveShadow = true;
+    group.add(main);
+
+    // Studs on arch
+    for (let ix = -w / 2 + 0.5; ix < w / 2; ix += 1) {
+      for (let iz = -d / 2 + 0.5; iz < d / 2; iz += 1) {
+        const studGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16);
+        const stud = new THREE.Mesh(studGeo, material);
+        stud.position.set(ix, h + 0.1, iz);
+        stud.castShadow = true;
+        group.add(stud);
+      }
+    }
+  } else if (catalogItem.shape === 'slope') {
+    const geom = new THREE.ConeGeometry(w * 0.7, h, 4);
+    geom.rotateY(Math.PI / 4);
+    const slope = new THREE.Mesh(geom, material);
+    slope.position.y = h / 2;
+    slope.castShadow = true;
+    group.add(slope);
   } else if (catalogItem.shape === 'tree') {
-    // Trunk
-    const trunkGeo = new THREE.CylinderGeometry(0.35, 0.45, 0.9, 12);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.6 });
+    const trunkGeo = new THREE.CylinderGeometry(0.2, 0.25, 0.8, 12);
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.8 });
     const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-    trunk.position.y = 0.45;
-    trunk.castShadow = true;
+    trunk.position.y = 0.4;
     group.add(trunk);
 
-    // Foliage tiers
-    const foliageGeo1 = new THREE.ConeGeometry(1.1, 1.2, 8);
-    const foliage1 = new THREE.Mesh(foliageGeo1, material);
-    foliage1.position.y = 1.3;
-    foliage1.castShadow = true;
-    group.add(foliage1);
-
-    const foliageGeo2 = new THREE.ConeGeometry(0.85, 1.0, 8);
-    const foliage2 = new THREE.Mesh(foliageGeo2, material);
-    foliage2.position.y = 2.0;
-    foliage2.castShadow = true;
-    group.add(foliage2);
+    const foliageGeo = new THREE.DodecahedronGeometry(0.95);
+    const foliage = new THREE.Mesh(foliageGeo, material);
+    foliage.position.y = 1.6;
+    foliage.castShadow = true;
+    group.add(foliage);
   } else if (catalogItem.shape === 'flag') {
-    // Base
-    const baseGeo = new THREE.BoxGeometry(0.95, 0.4, 0.95);
-    const base = new THREE.Mesh(baseGeo, material);
-    base.position.y = 0.2;
-    group.add(base);
-
-    // Pole
-    const poleGeo = new THREE.CylinderGeometry(0.08, 0.08, 2.3, 12);
-    const poleMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.3 });
+    const poleGeo = new THREE.CylinderGeometry(0.08, 0.08, 2.4, 12);
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.4 });
     const pole = new THREE.Mesh(poleGeo, poleMat);
-    pole.position.y = 1.35;
+    pole.position.y = 1.2;
     group.add(pole);
 
-    // Flag banner
-    const flagGeo = new THREE.BoxGeometry(1.1, 0.7, 0.12);
+    const flagGeo = new THREE.BoxGeometry(0.8, 0.5, 0.05);
     const flag = new THREE.Mesh(flagGeo, material);
-    flag.position.set(0.55, 2.1, 0);
-    flag.castShadow = true;
+    flag.position.set(0.4, 2.0, 0);
     group.add(flag);
   } else if (catalogItem.shape === 'gear') {
-    const gearGeo = new THREE.CylinderGeometry(0.95, 0.95, h, 12);
+    const gearGeo = new THREE.CylinderGeometry(w * 0.55, w * 0.55, h, 12);
     const gear = new THREE.Mesh(gearGeo, material);
     gear.position.y = h / 2;
     gear.castShadow = true;
     group.add(gear);
-
-    for (let i = 0; i < 8; i++) {
-      const toothGeo = new THREE.BoxGeometry(0.32, h * 0.9, 0.32);
-      const tooth = new THREE.Mesh(toothGeo, material);
-      const angle = (i / 8) * Math.PI * 2;
-      tooth.position.set(Math.cos(angle) * 0.98, h / 2, Math.sin(angle) * 0.98);
-      tooth.rotation.y = -angle;
-      group.add(tooth);
-    }
   } else {
-    // Standard box / plate / tower / arch / slope
-    const bodyGeo = new THREE.BoxGeometry(w - 0.06, h, d - 0.06);
+    // Default box-like brick or plate with standard LEGO studs
+    const bodyGeo = new THREE.BoxGeometry(w, h, d);
     const body = new THREE.Mesh(bodyGeo, material);
     body.position.y = h / 2;
     body.castShadow = true;
     body.receiveShadow = true;
     group.add(body);
 
-    // Add classic LEGO studs on top
-    const studGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.22, 16);
-    for (let ix = 0; ix < w; ix++) {
-      for (let iz = 0; iz < d; iz++) {
+    const studRadius = 0.32;
+    const studHeight = 0.22;
+    const studGeo = new THREE.CylinderGeometry(studRadius, studRadius, studHeight, 16);
+
+    for (let ix = -w / 2 + 0.5; ix < w / 2; ix += 1) {
+      for (let iz = -d / 2 + 0.5; iz < d / 2; iz += 1) {
         const stud = new THREE.Mesh(studGeo, material);
-        const sx = -w / 2 + 0.5 + ix;
-        const sz = -d / 2 + 0.5 + iz;
-        stud.position.set(sx, h + 0.11, sz);
+        stud.position.set(ix, h + studHeight / 2, iz);
         stud.castShadow = true;
         group.add(stud);
       }
     }
   }
 
-  // Red Brick ("Ladrillo Rojo" / Essential Core Piece) Golden Crown Halo
+  // Red Brick golden halo indicator
   if (brickData.isRedBrick) {
-    const ringGeo = new THREE.TorusGeometry(Math.max(w, d) * 0.65, 0.08, 12, 32);
-    const ringMat = new THREE.MeshStandardMaterial({
+    const starGeo = new THREE.RingGeometry(0.9, 1.15, 32);
+    starGeo.rotateX(-Math.PI / 2);
+    const starMat = new THREE.MeshBasicMaterial({
       color: 0xfbbf24,
-      emissive: 0xf59e0b,
-      emissiveIntensity: 0.7,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9,
     });
-    const ring = new THREE.Mesh(ringGeo, ringMat);
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = h + 0.45;
-    group.add(ring);
+    const star = new THREE.Mesh(starGeo, starMat);
+    star.position.y = h + 0.35;
+    group.add(star);
   }
 
-  // Selection or Connect Source highlight outline
-  if (isSelected || isConnectSource) {
-    const outlineGeo = new THREE.BoxGeometry(w + 0.22, h + 0.35, d + 0.22);
-    const outlineMat = new THREE.MeshBasicMaterial({
-      color: isConnectSource ? 0x10b981 : 0x38bdf8,
+  // Selection outline / highlight
+  if (isSelected) {
+    const box = new THREE.Box3().setFromObject(group);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+
+    const wireGeo = new THREE.BoxGeometry(size.x + 0.15, size.y + 0.15, size.z + 0.15);
+    const wireMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
       wireframe: true,
     });
-    const outline = new THREE.Mesh(outlineGeo, outlineMat);
-    outline.position.y = h / 2 + 0.1;
-    group.add(outline);
+    const wire = new THREE.Mesh(wireGeo, wireMat);
+    wire.position.copy(center);
+    group.add(wire);
+  }
+
+  // Connecting source pulse highlight
+  if (isConnectSource) {
+    const ringGeo = new THREE.RingGeometry(1.2, 1.4, 32);
+    ringGeo.rotateX(-Math.PI / 2);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x10b981,
+      side: THREE.DoubleSide,
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.y = 0.05;
+    group.add(ring);
   }
 
   group.position.set(brickData.x || 0, brickData.y || 0, brickData.z || 0);
   group.rotation.y = ((brickData.rotation || 0) * Math.PI) / 180;
-  group.userData = { brickId: brickData.id, brickData };
+  group.userData = { brickId: brickData.id };
 
   return group;
 }
@@ -199,25 +218,47 @@ export default function LegoBoard3D({
   onDeleteBrick,
   onAddConnection,
   onDeleteConnection,
-  activeTool, // 'place' | 'select' | 'connect'
+  activeTool,
   setActiveTool,
   connectionType,
   currentParticipant,
   levelMode,
   spotlightParticipantId,
 }) {
+  const { language, t } = useLanguage();
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const rendererRef = useRef(null);
-  const brickMeshesRef = useRef({});
-  const connectionMeshesRef = useRef([]);
-  const ghostMeshRef = useRef(null);
-  const raycasterRef = useRef(new THREE.Raycaster());
-  const mouseRef = useRef(new THREE.Vector2());
-  const groundPlaneRef = useRef(null);
+  const bricksGroupRef = useRef(null);
+  const connectionsGroupRef = useRef(null);
+  const planeRef = useRef(null);
 
-  // Camera spherical coordinates for smooth intuitive orbit without external dependencies
+  // Inspector card states
+  const [metaphorTitle, setMetaphorTitle] = useState('');
+  const [metaphorDesc, setMetaphorDesc] = useState('');
+  const [placementRotation, setPlacementRotation] = useState(0);
+
+  // Connecting state (Pick brick 1 -> Pick brick 2)
+  const [connectSourceId, setConnectSourceId] = useState(null);
+  const [connectionLabelInput, setConnectionLabelInput] = useState('');
+
+  // Hover coordinate for placement
+  const [hoverCoords, setHoverCoords] = useState(null);
+
+  const selectedBrick = bricks.find((b) => b.id === selectedBrickId);
+
+  useEffect(() => {
+    if (selectedBrick) {
+      setMetaphorTitle(selectedBrick.metaphorTitle || '');
+      setMetaphorDesc(selectedBrick.metaphorDesc || '');
+    } else {
+      setMetaphorTitle('');
+      setMetaphorDesc('');
+    }
+  }, [selectedBrickId, selectedBrick]);
+
+  // Camera Orbit controls state
   const camStateRef = useRef({
     radius: 26,
     theta: Math.PI / 4,
@@ -230,129 +271,104 @@ export default function LegoBoard3D({
     movedDistance: 0,
   });
 
-  const [placementRotation, setPlacementRotation] = useState(0);
-  const [connectSourceId, setConnectSourceId] = useState(null);
-  const [connectionLabelInput, setConnectionLabelInput] = useState('');
-  const [metaphorTitle, setMetaphorTitle] = useState('');
-  const [metaphorDesc, setMetaphorDesc] = useState('');
-  const [hoverCoords, setHoverCoords] = useState({ x: 0, y: 0, z: 0 });
+  const updateCameraPosition = () => {
+    if (!cameraRef.current) return;
+    const s = camStateRef.current;
+    const x = s.target.x + s.radius * Math.sin(s.phi) * Math.sin(s.theta);
+    const y = s.target.y + s.radius * Math.cos(s.phi);
+    const z = s.target.z + s.radius * Math.sin(s.phi) * Math.cos(s.theta);
+    cameraRef.current.position.set(x, Math.max(1, y), z);
+    cameraRef.current.lookAt(s.target);
+  };
 
-  const selectedBrick = bricks.find((b) => b.id === selectedBrickId) || null;
-
-  // Sync local metaphor inputs when selected brick changes
+  // Setup Three.js scene once
   useEffect(() => {
-    if (selectedBrick) {
-      setMetaphorTitle(selectedBrick.metaphorTitle || '');
-      setMetaphorDesc(selectedBrick.metaphorDesc || '');
-    } else {
-      setMetaphorTitle('');
-      setMetaphorDesc('');
-    }
-  }, [selectedBrickId, selectedBrick?.metaphorTitle, selectedBrick?.metaphorDesc]);
+    const mount = mountRef.current;
+    if (!mount) return;
 
-  // Focus camera on Spotlight Participant's models if spotlight changes
-  useEffect(() => {
-    if (!spotlightParticipantId) {
-      camStateRef.current.target.set(0, 0, 0);
-      updateCameraPosition();
-      return;
-    }
-    const ownedBricks = bricks.filter((b) => b.ownerId === spotlightParticipantId);
-    if (ownedBricks.length > 0) {
-      const avgX = ownedBricks.reduce((acc, b) => acc + b.x, 0) / ownedBricks.length;
-      const avgZ = ownedBricks.reduce((acc, b) => acc + b.z, 0) / ownedBricks.length;
-      camStateRef.current.target.set(avgX, 1, avgZ);
-      camStateRef.current.radius = 16;
-      updateCameraPosition();
-    }
-  }, [spotlightParticipantId]);
-
-  function updateCameraPosition() {
-    const cam = cameraRef.current;
-    if (!cam) return;
-    const { radius, theta, phi, target } = camStateRef.current;
-    const x = target.x + radius * Math.sin(phi) * Math.cos(theta);
-    const y = target.y + radius * Math.cos(phi);
-    const z = target.z + radius * Math.sin(phi) * Math.sin(theta);
-    cam.position.set(x, y, z);
-    cam.lookAt(target);
-  }
-
-  // Initialize Three.js Scene
-  useEffect(() => {
-    const container = mountRef.current;
-    if (!container) return;
+    const width = mount.clientWidth || 800;
+    const height = mount.clientHeight || 600;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0b1120);
+    scene.background = new THREE.Color(0x090d16);
+    scene.fog = new THREE.FogExp2(0x090d16, 0.018);
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(
-      45,
-      container.clientWidth / container.clientHeight,
-      0.1,
-      200
-    );
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     cameraRef.current = camera;
     updateCameraPosition();
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    container.innerHTML = '';
-    container.appendChild(renderer.domElement);
+    mount.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
-    scene.add(ambientLight);
+    // Ambient light + Studio key and rim lights
+    const ambLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.15);
-    dirLight.position.set(18, 28, 16);
+    const dirLight = new THREE.DirectionalLight(0xfff8ed, 1.4);
+    dirLight.position.set(18, 30, 20);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 100;
+    dirLight.shadow.camera.left = -22;
+    dirLight.shadow.camera.right = 22;
+    dirLight.shadow.camera.top = 22;
+    dirLight.shadow.camera.bottom = -22;
     scene.add(dirLight);
 
-    const fillLight = new THREE.DirectionalLight(0x38bdf8, 0.35);
-    fillLight.position.set(-16, 12, -14);
+    const fillLight = new THREE.DirectionalLight(0x38bdf8, 0.45);
+    fillLight.position.set(-20, 15, -15);
     scene.add(fillLight);
 
-    // Baseplate Table (28x28 LEGO studs board)
-    const boardSize = 28;
-    const baseGeo = new THREE.BoxGeometry(boardSize, 0.5, boardSize);
-    const baseMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
-      roughness: 0.6,
+    // Ground Table Grid & Board
+    const groundGeo = new THREE.PlaneGeometry(36, 36);
+    const groundMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      roughness: 0.9,
       metalness: 0.1,
     });
-    const baseMesh = new THREE.Mesh(baseGeo, baseMat);
-    baseMesh.position.y = -0.25;
-    baseMesh.receiveShadow = true;
-    scene.add(baseMesh);
-    groundPlaneRef.current = baseMesh;
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+    planeRef.current = ground;
+
+    // Center Gold Circle (Shared Model Zone - Level 2 / 3)
+    const centerCircleGeo = new THREE.RingGeometry(0.1, 5.0, 48);
+    centerCircleGeo.rotateX(-Math.PI / 2);
+    const centerCircleMat = new THREE.MeshBasicMaterial({
+      color: 0xf59e0b,
+      transparent: true,
+      opacity: 0.22,
+      side: THREE.DoubleSide,
+    });
+    const centerCircle = new THREE.Mesh(centerCircleGeo, centerCircleMat);
+    centerCircle.position.y = 0.01;
+    scene.add(centerCircle);
 
     // Grid Helper
-    const grid = new THREE.GridHelper(boardSize, boardSize, 0x475569, 0x334155);
-    grid.position.y = 0.01;
+    const grid = new THREE.GridHelper(36, 36, 0xf59e0b, 0x1e293b);
+    grid.position.y = 0.02;
     scene.add(grid);
 
-    // Center Shared Model Zone Ring (Level 2 & Level 3 visual guide)
-    const sharedZoneGeo = new THREE.RingGeometry(4.8, 5.05, 48);
-    const sharedZoneMat = new THREE.MeshBasicMaterial({
-      color: 0xfbbf24,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.55,
-    });
-    const sharedZoneRing = new THREE.Mesh(sharedZoneGeo, sharedZoneMat);
-    sharedZoneRing.rotation.x = Math.PI / 2;
-    sharedZoneRing.position.y = 0.02;
-    scene.add(sharedZoneRing);
+    // Dynamic Bricks group
+    const bricksGroup = new THREE.Group();
+    scene.add(bricksGroup);
+    bricksGroupRef.current = bricksGroup;
 
-    // Animation loop
+    // Connections group (tubes)
+    const connectionsGroup = new THREE.Group();
+    scene.add(connectionsGroup);
+    connectionsGroupRef.current = connectionsGroup;
+
+    // Animation Loop
     let animId;
     const animate = () => {
       animId = requestAnimationFrame(animate);
@@ -360,143 +376,134 @@ export default function LegoBoard3D({
     };
     animate();
 
+    // Resize Handler
     const handleResize = () => {
-      if (!container || !renderer || !camera) return;
-      camera.aspect = container.clientWidth / container.clientHeight;
+      if (!mount || !renderer || !camera) return;
+      const nw = mount.clientWidth;
+      const nh = mount.clientHeight;
+      camera.aspect = nw / nh;
       camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setSize(nw, nh);
     };
     window.addEventListener('resize', handleResize);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animId);
+      window.removeEventListener('resize', handleResize);
+      if (mount && renderer.domElement) {
+        mount.removeChild(renderer.domElement);
+      }
       renderer.dispose();
     };
   }, []);
 
-  // Re-render bricks and connections whenever state changes
+  // Update Spotlight Camera on participant change
   useEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene) return;
+    if (!spotlightParticipantId || !cameraRef.current) return;
+    const participantBricks = bricks.filter((b) => b.ownerId === spotlightParticipantId);
+    if (participantBricks.length > 0) {
+      let avgX = 0;
+      let avgZ = 0;
+      participantBricks.forEach((b) => {
+        avgX += b.x;
+        avgZ += b.z;
+      });
+      avgX /= participantBricks.length;
+      avgZ /= participantBricks.length;
 
-    // Remove old brick meshes
-    Object.values(brickMeshesRef.current).forEach((mesh) => scene.remove(mesh));
-    brickMeshesRef.current = {};
+      camStateRef.current.target.set(avgX, 0, avgZ);
+      camStateRef.current.radius = 16;
+      updateCameraPosition();
+    }
+  }, [spotlightParticipantId, bricks]);
 
-    // Add current bricks
+  // Re-render Bricks in Scene
+  useEffect(() => {
+    if (!bricksGroupRef.current) return;
+    const group = bricksGroupRef.current;
+    while (group.children.length > 0) {
+      group.remove(group.children[0]);
+    }
+
     bricks.forEach((b) => {
       const isSelected = b.id === selectedBrickId;
       const isConnectSource = b.id === connectSourceId;
       const mesh = createLegoBrickMesh(b, isSelected, isConnectSource);
-      scene.add(mesh);
-      brickMeshesRef.current[b.id] = mesh;
+      group.add(mesh);
     });
+  }, [bricks, selectedBrickId, connectSourceId]);
 
-    // Remove old connection meshes
-    connectionMeshesRef.current.forEach((m) => scene.remove(m));
-    connectionMeshesRef.current = [];
+  // Re-render Connections in Scene (3D tubes)
+  useEffect(() => {
+    if (!connectionsGroupRef.current) return;
+    const group = connectionsGroupRef.current;
+    while (group.children.length > 0) {
+      group.remove(group.children[0]);
+    }
 
-    // Add 3D tubes/curves between connected bricks (Level 3 Landscape)
     connections.forEach((conn) => {
-      const fromBrick = bricks.find((b) => b.id === conn.fromBrickId);
-      const toBrick = bricks.find((b) => b.id === conn.toBrickId);
-      if (!fromBrick || !toBrick) return;
+      const fromB = bricks.find((b) => b.id === conn.fromBrickId);
+      const toB = bricks.find((b) => b.id === conn.toBrickId);
+      if (!fromB || !toB) return;
 
-      const start = new THREE.Vector3(fromBrick.x, (fromBrick.y || 0) + 1.0, fromBrick.z);
-      const end = new THREE.Vector3(toBrick.x, (toBrick.y || 0) + 1.0, toBrick.z);
-      const mid = start.clone().lerp(end, 0.5);
-      mid.y += conn.type === 'flexible' ? 2.2 : 0.6;
+      const p1 = new THREE.Vector3(fromB.x, (fromB.y || 0) + 0.8, fromB.z);
+      const p2 = new THREE.Vector3(toB.x, (toB.y || 0) + 0.8, toB.z);
+      const mid = new THREE.Vector3()
+        .addVectors(p1, p2)
+        .multiplyScalar(0.5)
+        .add(new THREE.Vector3(0, 1.2, 0));
 
-      const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
-      const tubeGeo = new THREE.TubeGeometry(curve, 24, 0.12, 8, false);
+      const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
+      const tubeGeo = new THREE.TubeGeometry(curve, 20, 0.12, 8, false);
       const tubeMat = new THREE.MeshStandardMaterial({
         color: new THREE.Color(conn.color || '#10B981'),
-        emissive: new THREE.Color(conn.color || '#10B981'),
-        emissiveIntensity: 0.35,
+        roughness: 0.3,
+        metalness: 0.2,
       });
       const tubeMesh = new THREE.Mesh(tubeGeo, tubeMat);
-      scene.add(tubeMesh);
-      connectionMeshesRef.current.push(tubeMesh);
+      group.add(tubeMesh);
     });
-  }, [bricks, connections, selectedBrickId, connectSourceId]);
+  }, [connections, bricks]);
 
-  // Ghost preview mesh when in 'place' mode
-  useEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-
-    if (ghostMeshRef.current) {
-      scene.remove(ghostMeshRef.current);
-      ghostMeshRef.current = null;
-    }
-
-    if (activeTool === 'place') {
-      const ghostBrick = {
-        id: 'ghost',
-        type: selectedBrickType,
-        color: selectedColor,
-        x: hoverCoords.x,
-        y: hoverCoords.y,
-        z: hoverCoords.z,
-        rotation: placementRotation,
-      };
-      const mesh = createLegoBrickMesh(ghostBrick, false, false);
-      mesh.traverse((child) => {
-        if (child.isMesh) {
-          child.material = child.material.clone();
-          child.material.transparent = true;
-          child.material.opacity = 0.55;
-        }
-      });
-      scene.add(mesh);
-      ghostMeshRef.current = mesh;
-    }
-  }, [activeTool, selectedBrickType, selectedColor, placementRotation, hoverCoords]);
-
-  // Compute raycast intersection with existing bricks or baseplate
+  // Raycaster helper
   function getRaycastHit(clientX, clientY) {
-    const container = mountRef.current;
-    const camera = cameraRef.current;
-    if (!container || !camera) return null;
+    if (!mountRef.current || !cameraRef.current || !sceneRef.current) return null;
+    const rect = mountRef.current.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    const y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
-    const rect = container.getBoundingClientRect();
-    mouseRef.current.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    mouseRef.current.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(x, y), cameraRef.current);
 
-    raycasterRef.current.setFromCamera(mouseRef.current, camera);
-
-    const brickObjects = Object.values(brickMeshesRef.current);
-    const brickHits = raycasterRef.current.intersectObjects(brickObjects, true);
-
-    if (brickHits.length > 0) {
-      let obj = brickHits[0].object;
-      while (obj && !obj.userData?.brickId && obj.parent) {
-        obj = obj.parent;
-      }
-      if (obj && obj.userData?.brickId) {
-        const hitBrick = obj.userData.brickData;
-        const catalogItem = BRICK_CATALOG.find((c) => c.id === hitBrick.type) || BRICK_CATALOG[0];
-        const snapX = Math.round(brickHits[0].point.x);
-        const snapZ = Math.round(brickHits[0].point.z);
-        const topY = Number(((hitBrick.y || 0) + catalogItem.height).toFixed(2));
+    // 1. Check bricks first
+    if (bricksGroupRef.current) {
+      const brickHits = raycaster.intersectObjects(bricksGroupRef.current.children, true);
+      if (brickHits.length > 0) {
+        let root = brickHits[0].object;
+        while (root.parent && root.parent !== bricksGroupRef.current) {
+          root = root.parent;
+        }
+        const bId = root.userData?.brickId;
+        const hitPt = brickHits[0].point;
         return {
           type: 'brick',
-          brickId: obj.userData.brickId,
-          brickData: hitBrick,
-          placeX: Math.max(-12, Math.min(12, snapX)),
-          placeY: topY,
-          placeZ: Math.max(-12, Math.min(12, snapZ)),
+          brickId: bId,
+          point: hitPt,
+          placeX: Math.round(hitPt.x),
+          placeY: Number((hitPt.y + 0.1).toFixed(2)),
+          placeZ: Math.round(hitPt.z),
         };
       }
     }
 
-    if (groundPlaneRef.current) {
-      const groundHits = raycasterRef.current.intersectObject(groundPlaneRef.current);
-      if (groundHits.length > 0) {
-        const pt = groundHits[0].point;
+    // 2. Check plane
+    if (planeRef.current) {
+      const planeHits = raycaster.intersectObject(planeRef.current);
+      if (planeHits.length > 0) {
+        const pt = planeHits[0].point;
         return {
-          type: 'ground',
+          type: 'plane',
+          point: pt,
           placeX: Math.max(-12, Math.min(12, Math.round(pt.x))),
           placeY: 0,
           placeZ: Math.max(-12, Math.min(12, Math.round(pt.z))),
@@ -524,12 +531,10 @@ export default function LegoBoard3D({
       camStateRef.current.movedDistance += Math.abs(dx) + Math.abs(dy);
 
       if (camStateRef.current.dragButton === 2 || e.shiftKey) {
-        // Pan camera target
         const panSpeed = 0.03;
         camStateRef.current.target.x -= dx * panSpeed;
         camStateRef.current.target.z -= dy * panSpeed;
       } else {
-        // Orbit camera
         camStateRef.current.theta += dx * 0.008;
         camStateRef.current.phi = Math.max(
           0.25,
@@ -588,15 +593,18 @@ export default function LegoBoard3D({
         if (!connectSourceId) {
           setConnectSourceId(hit.brickId);
         } else if (connectSourceId !== hit.brickId) {
-          onAddConnection({
+          const newConn = {
             id: `conn-${Date.now()}`,
             fromBrickId: connectSourceId,
             toBrickId: hit.brickId,
             type: connectionType.id,
+            label:
+              connectionLabelInput.trim() ||
+              (language === 'en' && connectionType.nameEn ? connectionType.nameEn : connectionType.name),
             color: connectionType.color,
-            label: connectionLabelInput || connectionType.name,
             ownerId: currentParticipant.id,
-          });
+          };
+          onAddConnection(newConn);
           setConnectSourceId(null);
           setConnectionLabelInput('');
         } else {
@@ -647,6 +655,8 @@ export default function LegoBoard3D({
     });
   };
 
+  const selectedCatalogItem = BRICK_CATALOG.find((c) => c.id === selectedBrick?.type);
+
   return (
     <div className="relative w-full h-full select-none overflow-hidden bg-slate-950">
       {/* Three.js Canvas Mount */}
@@ -671,7 +681,7 @@ export default function LegoBoard3D({
           }`}
         >
           <Sparkles className="w-3.5 h-3.5" />
-          Construir Pieza
+          {t('toolPlace')}
         </button>
 
         <button
@@ -686,7 +696,7 @@ export default function LegoBoard3D({
           }`}
         >
           <Tag className="w-3.5 h-3.5" />
-          Seleccionar / Metáfora
+          {t('toolSelect')}
         </button>
 
         <button
@@ -701,18 +711,18 @@ export default function LegoBoard3D({
           }`}
         >
           <Link2 className="w-3.5 h-3.5" />
-          Conectar Sistema (Nivel 3)
+          {t('toolConnect')}
         </button>
 
         <div className="h-4 w-px bg-slate-700 mx-1" />
 
         <button
           onClick={handleRotateSelected}
-          title="Rotar 90°"
+          title="Rotate 90°"
           className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-200 hover:bg-slate-800 flex items-center gap-1"
         >
           <RotateCw className="w-3.5 h-3.5 text-amber-400" />
-          Rotar ({selectedBrick ? selectedBrick.rotation || 0 : placementRotation}°)
+          {language === 'en' ? 'Rotate' : 'Rotar'} ({selectedBrick ? selectedBrick.rotation || 0 : placementRotation}°)
         </button>
 
         <button
@@ -723,11 +733,11 @@ export default function LegoBoard3D({
             camStateRef.current.phi = Math.PI / 3.1;
             updateCameraPosition();
           }}
-          title="Centrar vista en la mesa"
+          title={language === 'en' ? 'Center camera on table' : 'Centrar vista en la mesa'}
           className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800 flex items-center gap-1"
         >
           <Compass className="w-3.5 h-3.5 text-sky-400" />
-          Vista Mesa
+          {language === 'en' ? 'Reset View' : 'Vista Mesa'}
         </button>
 
         <button
@@ -736,7 +746,7 @@ export default function LegoBoard3D({
             updateCameraPosition();
           }}
           className="p-1.5 rounded-lg text-slate-300 hover:bg-slate-800"
-          title="Acercar"
+          title={language === 'en' ? 'Zoom In' : 'Acercar'}
         >
           <ZoomIn className="w-3.5 h-3.5" />
         </button>
@@ -746,7 +756,7 @@ export default function LegoBoard3D({
             updateCameraPosition();
           }}
           className="p-1.5 rounded-lg text-slate-300 hover:bg-slate-800"
-          title="Alejar"
+          title={language === 'en' ? 'Zoom Out' : 'Alejar'}
         >
           <ZoomOut className="w-3.5 h-3.5" />
         </button>
@@ -759,15 +769,15 @@ export default function LegoBoard3D({
           <div>
             <span className="font-semibold">
               {connectSourceId
-                ? 'Paso 2: Haz clic en la pieza de destino para crear el vínculo'
-                : 'Paso 1: Haz clic en la primera pieza de origen'}
+                ? (language === 'en' ? 'Step 2: Click on the target brick to complete connection' : 'Paso 2: Haz clic en la pieza de destino para crear el vínculo')
+                : (language === 'en' ? 'Step 1: Click on the first brick to begin connection' : 'Paso 1: Haz clic en la primera pieza de origen')}
             </span>
             <div className="flex items-center gap-2 mt-1">
               <input
                 type="text"
                 value={connectionLabelInput}
                 onChange={(e) => setConnectionLabelInput(e.target.value)}
-                placeholder="Etiqueta del vínculo (ej. Gobernanza, Flujo de recursos)..."
+                placeholder={language === 'en' ? 'Connection label (e.g. Governance, Trust)...' : 'Etiqueta del vínculo (ej. Gobernanza, Confianza)...'}
                 className="bg-slate-900/90 border border-emerald-600/50 rounded px-2 py-0.5 text-xs text-white w-64"
               />
             </div>
@@ -775,19 +785,11 @@ export default function LegoBoard3D({
         </div>
       )}
 
-      {/* Floating Metaphor tags rendered over 3D bricks count & legend */}
+      {/* Floating viewport legend */}
       <div className="absolute bottom-3 left-3 bg-slate-900/85 backdrop-blur-md border border-slate-800 rounded-xl px-3 py-2 text-[11px] text-slate-300 flex items-center gap-4">
-        <span>
-          <strong>Clic Izquierdo:</strong> Colocar / Seleccionar pieza
-        </span>
-        <span>
-          <strong>Arrastrar:</strong> Orbitar cámara 3D
-        </span>
-        <span>
-          <strong>Clic Derecho + Arrastrar:</strong> Desplazar mesa
-        </span>
+        <span>{t('viewportControlsHint')}</span>
         <span className="text-amber-300 font-medium">
-          Círculo Dorado Central = Zona de Modelo Compartido (Nivel 2/3)
+          {language === 'en' ? 'Central Golden Ring = Shared Model Zone' : 'Círculo Dorado Central = Zona de Modelo Compartido'}
         </span>
       </div>
 
@@ -797,20 +799,23 @@ export default function LegoBoard3D({
           <div className="flex items-center justify-between border-b border-slate-800 pb-2">
             <div>
               <span className="text-[10px] uppercase tracking-wider text-sky-400 font-bold">
-                Inspector de Metáfora LSP
+                {language === 'en' ? 'LSP Metaphor Inspector' : 'Inspector de Metáfora LSP'}
               </span>
               <h4 className="font-bold text-sm text-white">
-                {BRICK_CATALOG.find((c) => c.id === selectedBrick.type)?.name || 'Pieza LEGO'}
+                {language === 'en' && selectedCatalogItem?.nameEn
+                  ? selectedCatalogItem.nameEn
+                  : selectedCatalogItem?.name || 'LEGO Brick'}
               </h4>
               <p className="text-[11px] text-slate-400">
-                Autor: <span className="text-slate-200 font-medium">{selectedBrick.ownerName}</span>
+                {language === 'en' ? 'Author' : 'Autor'}:{' '}
+                <span className="text-slate-200 font-medium">{selectedBrick.ownerName}</span>
               </p>
             </div>
             <button
               onClick={() => onSelectBrick(null)}
               className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded bg-slate-800"
             >
-              Cerrar
+              {language === 'en' ? 'Close' : 'Cerrar'}
             </button>
           </div>
 
@@ -818,28 +823,28 @@ export default function LegoBoard3D({
           <div className="space-y-2">
             <div>
               <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                Nombre de la Metáfora (¿Qué representa esta pieza?)
+                {t('metaphorTitleLabel')}
               </label>
               <input
                 type="text"
                 value={metaphorTitle}
                 onChange={(e) => setMetaphorTitle(e.target.value)}
                 onBlur={handleSaveMetaphor}
-                placeholder="Ej: Puente de confianza interinstitucional"
+                placeholder={language === 'en' ? 'e.g. Bridge of Inter-agency Trust' : 'Ej: Puente de confianza interinstitucional'}
                 className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-amber-400 focus:outline-none"
               />
             </div>
 
             <div>
               <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                Significado en tu historia
+                {t('metaphorDescLabel')}
               </label>
               <textarea
                 rows={2}
                 value={metaphorDesc}
                 onChange={(e) => setMetaphorDesc(e.target.value)}
                 onBlur={handleSaveMetaphor}
-                placeholder="Explica por qué elegiste este color/altura y qué rol cumple..."
+                placeholder={language === 'en' ? 'Why this shape/color? What role does it play?' : 'Explica por qué elegiste este color/altura y qué rol cumple...'}
                 className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-amber-400 focus:outline-none resize-none"
               />
             </div>
@@ -848,11 +853,11 @@ export default function LegoBoard3D({
               onClick={handleSaveMetaphor}
               className="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-1.5 rounded-lg transition"
             >
-              Guardar Metáfora en la Pieza
+              {t('saveBrickInfo')}
             </button>
           </div>
 
-          {/* Red Brick Toggle (Essential for Level 1 -> Level 2 Transition) */}
+          {/* Red Brick Toggle */}
           <div className="pt-1 border-t border-slate-800">
             <button
               onClick={handleToggleRedBrick}
@@ -864,8 +869,8 @@ export default function LegoBoard3D({
             >
               <Star className={`w-4 h-4 ${selectedBrick.isRedBrick ? 'fill-slate-950' : ''}`} />
               {selectedBrick.isRedBrick
-                ? 'Marcado como "Ladrillo Rojo" Esencial'
-                : 'Marcar como "Ladrillo Rojo" (Esencial)'}
+                ? (language === 'en' ? 'Marked as Core "Red Brick"' : 'Marcado como "Ladrillo Rojo" Esencial')
+                : (language === 'en' ? 'Designate as Core "Red Brick"' : 'Marcar como "Ladrillo Rojo" (Esencial)')}
             </button>
           </div>
 
@@ -875,42 +880,42 @@ export default function LegoBoard3D({
               <button
                 onClick={() => handleNudgeSelected(-1, 0, 0)}
                 className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200"
-                title="Mover X-"
+                title="Move X-"
               >
                 ←
               </button>
               <button
                 onClick={() => handleNudgeSelected(1, 0, 0)}
                 className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200"
-                title="Mover X+"
+                title="Move X+"
               >
                 →
               </button>
               <button
                 onClick={() => handleNudgeSelected(0, 0, -1)}
                 className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200"
-                title="Mover Z-"
+                title="Move Z-"
               >
                 ↑
               </button>
               <button
                 onClick={() => handleNudgeSelected(0, 0, 1)}
                 className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200"
-                title="Mover Z+"
+                title="Move Z+"
               >
                 ↓
               </button>
               <button
                 onClick={() => handleNudgeSelected(0, 0.4, 0)}
                 className="p-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200"
-                title="Subir altura"
+                title="Elevation Up"
               >
                 <MoveUp className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => handleNudgeSelected(0, -0.4, 0)}
                 className="p-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200"
-                title="Bajar altura"
+                title="Elevation Down"
               >
                 <MoveDown className="w-3.5 h-3.5" />
               </button>
@@ -924,7 +929,7 @@ export default function LegoBoard3D({
               className="px-2.5 py-1 bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 border border-rose-500/40 rounded-lg flex items-center gap-1 font-semibold"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              Eliminar
+              {language === 'en' ? 'Delete' : 'Eliminar'}
             </button>
           </div>
         </div>
@@ -932,4 +937,3 @@ export default function LegoBoard3D({
     </div>
   );
 }
-
