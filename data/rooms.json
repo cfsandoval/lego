@@ -1,0 +1,106 @@
+{
+  "ONU2026": {
+    "roomCode": "ONU2026",
+    "templateId": "prospectiva-2050",
+    "createdAt": "2026-11-05T12:06:17.357Z",
+    "currentStageIndex": 0,
+    "corePhase": "challenge",
+    "levelMode": "individual",
+    "customQuestion": "",
+    "timer": {
+      "remainingSeconds": 240,
+      "totalSeconds": 240,
+      "isRunning": false,
+      "lastUpdated": 1793880377357
+    },
+    "spotlightParticipantId": null,
+    "participants": {
+      "user-1793883013540-qfsg9": {
+        "id": "user-1793883013540-qfsg9",
+        "socketId": "8BNLIq1_51VvbbPvAAAA",
+        "name": "cse",
+        "role": "facilitator",
+        "avatarColor": "#E3000B",
+        "online": true,
+        "ready": false,
+        "zoneIndex": 0
+      }
+    },
+    "bricks": [
+      {
+        "id": "seed-brick-1",
+        "type": "brick-2x4",
+        "color": "#E3000B",
+        "x": -4,
+        "y": 0,
+        "z": -4,
+        "rotation": 0,
+        "ownerId": "demo-facilitator",
+        "ownerName": "Facilitador",
+        "metaphorTitle": "Base Institucional Sólida",
+        "metaphorDesc": "Representa la articulación territorial y gobernanza participativa.",
+        "isRedBrick": false,
+        "createdAt": 1793880377357
+      },
+      {
+        "id": "seed-brick-2",
+        "type": "tower-2x2",
+        "color": "#FFD500",
+        "x": -4,
+        "y": 1.2,
+        "z": -4,
+        "rotation": 0,
+        "ownerId": "demo-facilitator",
+        "ownerName": "Facilitador",
+        "metaphorTitle": "Faro de Innovación 2050",
+        "metaphorDesc": "Visión compartida hacia la sostenibilidad y resiliencia.",
+        "isRedBrick": true,
+        "createdAt": 1793880377357
+      },
+      {
+        "id": "seed-brick-3",
+        "type": "minifig",
+        "color": "#0055BF",
+        "x": 4,
+        "y": 0,
+        "z": -4,
+        "rotation": 0,
+        "ownerId": "demo-facilitator",
+        "ownerName": "Facilitador",
+        "metaphorTitle": "Ciudadanía Activa",
+        "metaphorDesc": "Actores clave en el centro de las decisiones estratégicas.",
+        "isRedBrick": false,
+        "createdAt": 1793880377357
+      },
+      {
+        "id": "brick-1793883016919-bx6n",
+        "type": "brick-2x4",
+        "color": "#E3000B",
+        "x": 8,
+        "y": 0,
+        "z": -7,
+        "rotation": 0,
+        "ownerId": "user-1793883013540-qfsg9",
+        "ownerName": "cse",
+        "metaphorTitle": "",
+        "metaphorDesc": "",
+        "isRedBrick": false,
+        "createdAt": 1793883016921
+      }
+    ],
+    "connections": [
+      {
+        "id": "seed-conn-1",
+        "fromBrickId": "seed-brick-2",
+        "toBrickId": "seed-brick-3",
+        "type": "flexible",
+        "label": "Participación vinculante",
+        "color": "#10B981",
+        "ownerId": "demo-facilitator"
+      }
+    ],
+    "stories": [],
+    "reflections": [],
+    "emergentEvents": []
+  }
+}
