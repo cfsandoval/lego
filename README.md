@@ -9,7 +9,7 @@ Haz doble clic sobre el archivo [`iniciar_app.bat`](./iniciar_app.bat). Esto lev
 
 ### Opción por Terminal
 ```bash
-cd "C:\Users\csandoval\OneDrive - United Nations\1 UN 2026\Lego\sistemaLegoVirtualAntigravity"
+
 npm run dev
 ```
 - **Aplicación Web 3D:** `http://localhost:5173`
