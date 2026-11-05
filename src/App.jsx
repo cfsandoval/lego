@@ -597,17 +597,54 @@ export default function App() {
             selectedColor={selectedColor}
             selectedBrickId={selectedBrickId}
             onSelectBrick={setSelectedBrickId}
-            onAddBrick={(brick) => socketRef.current?.emit('brick:add', brick)}
-            onUpdateBrick={(brickId, updates) =>
-              socketRef.current?.emit('brick:update', { brickId, updates })
-            }
-            onDeleteBrick={(brickId) =>
-              socketRef.current?.emit('brick:delete', { brickId })
-            }
-            onAddConnection={(conn) => socketRef.current?.emit('connection:add', conn)}
-            onDeleteConnection={(connectionId) =>
-              socketRef.current?.emit('connection:delete', { connectionId })
-            }
+            onAddBrick={(brick) => {
+              // Optimistic local update so brick immediately shows even before socket round-trip
+              setRoomState((prev) =>
+                prev ? { ...prev, bricks: [...(prev.bricks || []), brick] } : prev
+              );
+              socketRef.current?.emit('brick:add', brick);
+            }}
+            onUpdateBrick={(brickId, updates) => {
+              setRoomState((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  bricks: (prev.bricks || []).map((b) =>
+                    b.id === brickId ? { ...b, ...updates } : b
+                  ),
+                };
+              });
+              socketRef.current?.emit('brick:update', { brickId, updates });
+            }}
+            onDeleteBrick={(brickId) => {
+              setRoomState((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  bricks: (prev.bricks || []).filter((b) => b.id !== brickId),
+                  connections: (prev.connections || []).filter(
+                    (c) => c.fromBrickId !== brickId && c.toBrickId !== brickId
+                  ),
+                };
+              });
+              socketRef.current?.emit('brick:delete', { brickId });
+            }}
+            onAddConnection={(conn) => {
+              setRoomState((prev) =>
+                prev ? { ...prev, connections: [...(prev.connections || []), conn] } : prev
+              );
+              socketRef.current?.emit('connection:add', conn);
+            }}
+            onDeleteConnection={(connectionId) => {
+              setRoomState((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  connections: (prev.connections || []).filter((c) => c.id !== connectionId),
+                };
+              });
+              socketRef.current?.emit('connection:delete', { connectionId });
+            }}
             activeTool={activeTool}
             setActiveTool={setActiveTool}
             connectionType={connectionType}

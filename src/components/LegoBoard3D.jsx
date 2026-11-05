@@ -266,6 +266,8 @@ export default function LegoBoard3D({
     target: new THREE.Vector3(0, 0, 0),
     isDragging: false,
     dragButton: 0,
+    startX: 0,
+    startY: 0,
     lastX: 0,
     lastY: 0,
     movedDistance: 0,
@@ -517,6 +519,8 @@ export default function LegoBoard3D({
   const handleMouseDown = (e) => {
     camStateRef.current.isDragging = true;
     camStateRef.current.dragButton = e.button;
+    camStateRef.current.startX = e.clientX;
+    camStateRef.current.startY = e.clientY;
     camStateRef.current.lastX = e.clientX;
     camStateRef.current.lastY = e.clientY;
     camStateRef.current.movedDistance = 0;
@@ -554,7 +558,12 @@ export default function LegoBoard3D({
   };
 
   const handleMouseUp = (e) => {
-    const wasClick = camStateRef.current.movedDistance < 6 && e.button === 0;
+    // Determine if this was a stationary click vs a camera drag
+    const totalDist = Math.hypot(
+      e.clientX - camStateRef.current.startX,
+      e.clientY - camStateRef.current.startY
+    );
+    const wasClick = (totalDist < 10 || camStateRef.current.movedDistance < 10) && e.button === 0;
     camStateRef.current.isDragging = false;
 
     if (!wasClick) return;
@@ -568,14 +577,14 @@ export default function LegoBoard3D({
     if (activeTool === 'place') {
       const newBrick = {
         id: `brick-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        type: selectedBrickType,
-        color: selectedColor,
+        type: selectedBrickType || 'brick-2x4',
+        color: selectedColor || '#E3000B',
         x: hit.placeX,
         y: hit.placeY,
         z: hit.placeZ,
         rotation: placementRotation,
-        ownerId: currentParticipant.id,
-        ownerName: currentParticipant.name,
+        ownerId: currentParticipant?.id || `user-${Date.now()}`,
+        ownerName: currentParticipant?.name || 'Participant',
         metaphorTitle: '',
         metaphorDesc: '',
         isRedBrick: false,
@@ -597,12 +606,12 @@ export default function LegoBoard3D({
             id: `conn-${Date.now()}`,
             fromBrickId: connectSourceId,
             toBrickId: hit.brickId,
-            type: connectionType.id,
+            type: connectionType?.id || 'standard',
             label:
               connectionLabelInput.trim() ||
-              (language === 'en' && connectionType.nameEn ? connectionType.nameEn : connectionType.name),
-            color: connectionType.color,
-            ownerId: currentParticipant.id,
+              (language === 'en' && connectionType?.nameEn ? connectionType.nameEn : connectionType?.name || 'Connection'),
+            color: connectionType?.color || '#10B981',
+            ownerId: currentParticipant?.id || `user-${Date.now()}`,
           };
           onAddConnection(newConn);
           setConnectSourceId(null);
