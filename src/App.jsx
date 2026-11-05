@@ -73,7 +73,8 @@ export default function App() {
   useEffect(() => {
     if (!sessionUser) return;
 
-    const socket = io('/', {
+    const serverUrl = import.meta.env.VITE_SERVER_URL || '/';
+    const socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
     });
     socketRef.current = socket;

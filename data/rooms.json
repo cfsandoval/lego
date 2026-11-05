@@ -17,11 +17,11 @@
     "participants": {
       "user-1793883013540-qfsg9": {
         "id": "user-1793883013540-qfsg9",
-        "socketId": "8BNLIq1_51VvbbPvAAAA",
+        "socketId": "nd9912Cc6ZHMVdkXAAAE",
         "name": "cse",
         "role": "facilitator",
         "avatarColor": "#E3000B",
-        "online": true,
+        "online": false,
         "ready": false,
         "zoneIndex": 0
       }
