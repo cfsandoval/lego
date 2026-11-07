@@ -26,6 +26,7 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 const ROOMS_FILE = path.join(DATA_DIR, 'rooms.json');
+const TEMPLATES_FILE = path.join(DATA_DIR, 'templates.json');
 
 // Default rooms store
 let rooms = {};
@@ -37,11 +38,34 @@ try {
   console.error('Error loading rooms.json:', err);
 }
 
+// Custom templates store
+let customTemplates = null;
+try {
+  if (fs.existsSync(TEMPLATES_FILE)) {
+    customTemplates = JSON.parse(fs.readFileSync(TEMPLATES_FILE, 'utf-8'));
+  }
+} catch (err) {
+  console.error('Error loading templates.json:', err);
+}
+
 function saveRooms() {
   try {
     fs.writeFileSync(ROOMS_FILE, JSON.stringify(rooms, null, 2), 'utf-8');
   } catch (err) {
     console.error('Error saving rooms.json:', err);
+  }
+}
+
+function saveTemplates(templatesData) {
+  try {
+    customTemplates = templatesData;
+    if (templatesData === null) {
+      if (fs.existsSync(TEMPLATES_FILE)) fs.unlinkSync(TEMPLATES_FILE);
+    } else {
+      fs.writeFileSync(TEMPLATES_FILE, JSON.stringify(templatesData, null, 2), 'utf-8');
+    }
+  } catch (err) {
+    console.error('Error saving templates.json:', err);
   }
 }
 
@@ -171,12 +195,32 @@ app.get('/api/rooms/:code', (req, res) => {
   res.json(rooms[code]);
 });
 
+app.get('/api/templates', (req, res) => {
+  res.json({ templates: customTemplates });
+});
+
+app.post('/api/templates', (req, res) => {
+  const { templates } = req.body || {};
+  saveTemplates(Array.isArray(templates) ? templates : null);
+  io.emit('templates:state', customTemplates);
+  res.json({ ok: true, templates: customTemplates });
+});
+
 io.on('connection', (socket) => {
   let currentRoomCode = null;
   let currentParticipantId = null;
 
+  if (customTemplates) {
+    socket.emit('templates:state', customTemplates);
+  }
+
+  socket.on('templates:update', (newTemplates) => {
+    saveTemplates(Array.isArray(newTemplates) ? newTemplates : null);
+    io.emit('templates:state', customTemplates);
+  });
+
   socket.on('room:join', ({ roomCode, participantId, name, role, avatarColor, templateId }) => {
-    const code = (roomCode || 'ONU2026').toUpperCase().trim();
+    const code = (roomCode || 'TEST1').toUpperCase().trim();
     currentRoomCode = code;
     currentParticipantId = participantId;
 

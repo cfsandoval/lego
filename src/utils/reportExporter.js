@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { WORKSHOP_TEMPLATES, APPLICATION_LEVELS } from '../data/lspMethodology';
+import { getStoredTemplates, APPLICATION_LEVELS } from '../data/lspMethodology';
 
 export function exportWorkshopToJSON(roomState) {
   const dataStr = JSON.stringify(roomState, null, 2);
@@ -12,10 +12,11 @@ export function exportWorkshopToJSON(roomState) {
   URL.revokeObjectURL(url);
 }
 
-export function exportWorkshopToPDF(roomState, language = 'en') {
+export function exportWorkshopToPDF(roomState, language = 'en', customTemplates = null) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const activeTemplates = customTemplates || getStoredTemplates();
   const template =
-    WORKSHOP_TEMPLATES.find((t) => t.id === roomState.templateId) || WORKSHOP_TEMPLATES[0];
+    activeTemplates.find((t) => t.id === roomState.templateId) || activeTemplates[0];
 
   const isEn = language === 'en';
 

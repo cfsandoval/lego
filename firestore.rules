@@ -1,0 +1,156 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: system_config
+// Document ID: templates
+// Fields:
+//   - templates: list (required, 1..50 items) - Bilingual workshop templates array
+//   - updatedAt: string (required, max 60 chars) - Last update ISO timestamp
+//   - updatedBy: string (optional, max 128 chars) - Alias or session ID of editor
+//
+// Collection: rooms
+// Document ID: {roomCode}
+// Fields:
+//   - roomCode: string (required, 1..30 chars) - Uppercase room code (e.g. TEST1)
+//   - templateId: string (required, 1..80 chars) - Active workshop template ID
+//   - createdAt: string (required, max 60 chars) - Room creation ISO timestamp
+//   - updatedAt: string (optional, max 60 chars) - Last state update ISO timestamp
+//   - currentStageIndex: number (required, 0..50) - Current stage index
+//   - corePhase: string (required, 'challenge' | 'build' | 'share' | 'reflect')
+//   - levelMode: string (required, 'skills' | 'individual' | 'shared' | 'landscape')
+//   - customQuestion: string (required, 0..1000 chars)
+//   - timer: map (required, keys: remainingSeconds, totalSeconds, isRunning, lastUpdated)
+//   - spotlightParticipantId: string or null (optional, max 128 chars)
+//   - participants: map (required) - Map of active participants in the room
+//   - bricks: list (required, max 500 items) - 3D LEGO bricks placed on the board
+//   - connections: list (required, max 500 items) - Connections between bricks
+//   - stories: list (required, max 300 items) - Participant model stories
+//   - reflections: list (required, max 300 items) - Reflections and Simple Guiding Principles
+//   - emergentEvents: list (required, max 100 items) - Triggered emergent What-If events
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+        request.resource.data[field] == null ||
+        (request.resource.data[field] is string &&
+         request.resource.data[field].size() >= minLen &&
+         request.resource.data[field].size() <= maxLen);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidTemplateConfig(data) {
+      return hasRequiredFields(['templates', 'updatedAt']) &&
+        hasOnlyAllowedFields(['templates', 'updatedAt', 'updatedBy']) &&
+        data.templates is list && data.templates.size() >= 1 && data.templates.size() <= 50 &&
+        data.updatedAt is string && data.updatedAt.size() <= 60 &&
+        isValidOptionalString('updatedBy', 1, 128);
+    }
+
+    function isValidTimer(timer) {
+      return timer is map &&
+        timer.keys().hasAll(['remainingSeconds', 'totalSeconds', 'isRunning']) &&
+        timer.keys().hasOnly(['remainingSeconds', 'totalSeconds', 'isRunning', 'lastUpdated']) &&
+        timer.remainingSeconds is number && timer.remainingSeconds >= 0 && timer.remainingSeconds <= 7200 &&
+        timer.totalSeconds is number && timer.totalSeconds >= 0 && timer.totalSeconds <= 7200 &&
+        timer.isRunning is bool;
+    }
+
+    function isValidRoom(data, roomCode) {
+      return hasRequiredFields([
+          'roomCode',
+          'templateId',
+          'createdAt',
+          'currentStageIndex',
+          'corePhase',
+          'levelMode',
+          'customQuestion',
+          'timer',
+          'participants',
+          'bricks',
+          'connections',
+          'stories',
+          'reflections',
+          'emergentEvents'
+        ]) &&
+        hasOnlyAllowedFields([
+          'roomCode',
+          'templateId',
+          'createdAt',
+          'updatedAt',
+          'currentStageIndex',
+          'corePhase',
+          'levelMode',
+          'customQuestion',
+          'timer',
+          'spotlightParticipantId',
+          'participants',
+          'bricks',
+          'connections',
+          'stories',
+          'reflections',
+          'emergentEvents'
+        ]) &&
+        data.roomCode is string && data.roomCode == roomCode && data.roomCode.size() >= 1 && data.roomCode.size() <= 30 &&
+        data.templateId is string && data.templateId.size() >= 1 && data.templateId.size() <= 80 &&
+        data.createdAt is string && data.createdAt.size() <= 60 &&
+        isValidOptionalString('updatedAt', 1, 60) &&
+        data.currentStageIndex is number && data.currentStageIndex >= 0 && data.currentStageIndex <= 50 &&
+        data.corePhase in ['challenge', 'build', 'share', 'reflect'] &&
+        data.levelMode in ['skills', 'individual', 'shared', 'landscape'] &&
+        data.customQuestion is string && data.customQuestion.size() <= 1000 &&
+        isValidTimer(data.timer) &&
+        isValidOptionalString('spotlightParticipantId', 1, 128) &&
+        data.participants is map && data.participants.size() <= 100 &&
+        data.bricks is list && data.bricks.size() <= 500 &&
+        data.connections is list && data.connections.size() <= 500 &&
+        data.stories is list && data.stories.size() <= 300 &&
+        data.reflections is list && data.reflections.size() <= 300 &&
+        data.emergentEvents is list && data.emergentEvents.size() <= 100;
+    }
+
+    // ===============================================================
+    // Rules per Collection
+    // ===============================================================
+
+    // System Configuration (Bilingual Workshop Templates)
+    match /system_config/{configId} {
+      allow read: if true;
+      allow create, update: if configId == 'templates' && isValidTemplateConfig(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Multiplayer 3D Workshop Rooms & Results
+    match /rooms/{roomCode} {
+      allow read: if true;
+      allow create, update: if isValidRoom(request.resource.data, roomCode);
+      allow delete: if false;
+    }
+
+    // Default deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

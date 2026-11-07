@@ -17,13 +17,23 @@
     "participants": {
       "user-1793883013540-qfsg9": {
         "id": "user-1793883013540-qfsg9",
-        "socketId": "blniXHyASwWROfptAAAF",
+        "socketId": "0nbV8ncUnG3BLJTkAAAH",
         "name": "cse",
         "role": "facilitator",
         "avatarColor": "#E3000B",
-        "online": true,
+        "online": false,
         "ready": false,
         "zoneIndex": 0
+      },
+      "user-1793843012626-ratmo": {
+        "id": "user-1793843012626-ratmo",
+        "socketId": "xdMcY9WhCSmiMcLWAAAA",
+        "name": "22222",
+        "role": "facilitator",
+        "avatarColor": "#E3000B",
+        "online": false,
+        "ready": false,
+        "zoneIndex": 1
       }
     },
     "bricks": [
@@ -86,6 +96,36 @@
         "metaphorDesc": "",
         "isRedBrick": false,
         "createdAt": 1793883016921
+      },
+      {
+        "id": "brick-1793894099077-xlfn",
+        "type": "brick-2x4",
+        "color": "#E3000B",
+        "x": 2,
+        "y": 0,
+        "z": -11,
+        "rotation": 0,
+        "ownerId": "user-1793883013540-qfsg9",
+        "ownerName": "cse",
+        "metaphorTitle": "",
+        "metaphorDesc": "",
+        "isRedBrick": false,
+        "createdAt": 1793894099081
+      },
+      {
+        "id": "brick-1793894100507-61an",
+        "type": "brick-2x4",
+        "color": "#E3000B",
+        "x": 11,
+        "y": 0,
+        "z": -11,
+        "rotation": 0,
+        "ownerId": "user-1793883013540-qfsg9",
+        "ownerName": "cse",
+        "metaphorTitle": "",
+        "metaphorDesc": "",
+        "isRedBrick": false,
+        "createdAt": 1793894100508
       }
     ],
     "connections": [
@@ -99,6 +139,200 @@
         "ownerId": "demo-facilitator"
       }
     ],
+    "stories": [],
+    "reflections": [],
+    "emergentEvents": []
+  },
+  "TEST1": {
+    "roomCode": "TEST1",
+    "templateId": "capacidades-topp-cepal",
+    "createdAt": "2026-11-06T21:14:44.491Z",
+    "currentStageIndex": 2,
+    "corePhase": "challenge",
+    "levelMode": "shared",
+    "customQuestion": "",
+    "timer": {
+      "remainingSeconds": 420,
+      "totalSeconds": 420,
+      "isRunning": false,
+      "lastUpdated": 1793999684491
+    },
+    "spotlightParticipantId": "u0yAYY4lvLRJj7OWKwa9RMIkJN83",
+    "participants": {
+      "user-1793999684219-bbkbh": {
+        "id": "user-1793999684219-bbkbh",
+        "socketId": "JLVePDQKqRIyYDZNAAAB",
+        "name": "cse",
+        "role": "facilitator",
+        "avatarColor": "#E3000B",
+        "online": false,
+        "ready": true,
+        "zoneIndex": 0
+      },
+      "user-1793999759606-qsg8e": {
+        "id": "user-1793999759606-qsg8e",
+        "socketId": "YzhGgjv5iCAF3yNoAAAC",
+        "name": "sssss",
+        "role": "facilitator",
+        "avatarColor": "#E3000B",
+        "online": false,
+        "ready": false,
+        "zoneIndex": 1
+      },
+      "user-1793999786169-82zeq": {
+        "id": "user-1793999786169-82zeq",
+        "socketId": "m8e1IE_FT0K-poKUAAAD",
+        "name": "sss",
+        "role": "facilitator",
+        "avatarColor": "#E3000B",
+        "online": false,
+        "ready": false,
+        "zoneIndex": 2
+      },
+      "user-1794011485155-zq7x5": {
+        "id": "user-1794011485155-zq7x5",
+        "socketId": "75u8qxGRFrxwI4G-AAAG",
+        "name": "cse",
+        "role": "facilitator",
+        "avatarColor": "#E3000B",
+        "online": false,
+        "ready": false,
+        "zoneIndex": 3
+      },
+      "u0yAYY4lvLRJj7OWKwa9RMIkJN83": {
+        "id": "u0yAYY4lvLRJj7OWKwa9RMIkJN83",
+        "socketId": "lYmorTJSl8v1fSt8AAAJ",
+        "name": "Usuario",
+        "role": "facilitator",
+        "avatarColor": "#E3000B",
+        "online": false,
+        "ready": false,
+        "zoneIndex": 4
+      }
+    },
+    "bricks": [
+      {
+        "id": "brick-1793999695992-caqc",
+        "type": "brick-2x4",
+        "color": "#E3000B",
+        "x": -4,
+        "y": 0,
+        "z": 2,
+        "rotation": 0,
+        "ownerId": "user-1793999684219-bbkbh",
+        "ownerName": "cse",
+        "metaphorTitle": "",
+        "metaphorDesc": "",
+        "isRedBrick": false,
+        "createdAt": 1793999695994
+      },
+      {
+        "id": "brick-1793999697861-t2a6",
+        "type": "brick-2x4",
+        "color": "#E3000B",
+        "x": -3,
+        "y": 0,
+        "z": -3,
+        "rotation": 0,
+        "ownerId": "user-1793999684219-bbkbh",
+        "ownerName": "cse",
+        "metaphorTitle": "",
+        "metaphorDesc": "",
+        "isRedBrick": false,
+        "createdAt": 1793999697862
+      },
+      {
+        "id": "brick-1793999708868-91ja",
+        "type": "brick-2x2",
+        "color": "#FFD500",
+        "x": 0,
+        "y": 0,
+        "z": -3,
+        "rotation": 0,
+        "ownerId": "user-1793999684219-bbkbh",
+        "ownerName": "cse",
+        "metaphorTitle": "",
+        "metaphorDesc": "",
+        "isRedBrick": false,
+        "createdAt": 1793999708869
+      },
+      {
+        "id": "brick-1793999738943-b12c",
+        "type": "brick-2x2",
+        "color": "#FFD500",
+        "x": 1,
+        "y": 0,
+        "z": 2,
+        "rotation": 0,
+        "ownerId": "user-1793999684219-bbkbh",
+        "ownerName": "cse",
+        "metaphorTitle": "",
+        "metaphorDesc": "",
+        "isRedBrick": false,
+        "createdAt": 1793999738944
+      },
+      {
+        "id": "brick-1793999741063-vkpa",
+        "type": "brick-2x2",
+        "color": "#0055BF",
+        "x": -4,
+        "y": 1.2,
+        "z": 1,
+        "rotation": 0,
+        "ownerId": "user-1793999684219-bbkbh",
+        "ownerName": "cse",
+        "metaphorTitle": "",
+        "metaphorDesc": "",
+        "isRedBrick": false,
+        "createdAt": 1793999741064
+      },
+      {
+        "id": "brick-1794011690570-drwa",
+        "type": "brick-2x4",
+        "color": "#E3000B",
+        "x": 3,
+        "y": 0,
+        "z": -9,
+        "rotation": 0,
+        "ownerId": "u0yAYY4lvLRJj7OWKwa9RMIkJN83",
+        "ownerName": "cfsandoval",
+        "metaphorTitle": "",
+        "metaphorDesc": "",
+        "isRedBrick": false,
+        "createdAt": 1794011690585
+      },
+      {
+        "id": "brick-1794011691633-mo3r",
+        "type": "brick-2x4",
+        "color": "#E3000B",
+        "x": 9,
+        "y": 0,
+        "z": -4,
+        "rotation": 0,
+        "ownerId": "u0yAYY4lvLRJj7OWKwa9RMIkJN83",
+        "ownerName": "cfsandoval",
+        "metaphorTitle": "",
+        "metaphorDesc": "",
+        "isRedBrick": false,
+        "createdAt": 1794011691639
+      },
+      {
+        "id": "brick-1794012301239-qbwe",
+        "type": "brick-2x4",
+        "color": "#E3000B",
+        "x": -5,
+        "y": 0,
+        "z": 7,
+        "rotation": 0,
+        "ownerId": "u0yAYY4lvLRJj7OWKwa9RMIkJN83",
+        "ownerName": "Usuario",
+        "metaphorTitle": "",
+        "metaphorDesc": "",
+        "isRedBrick": false,
+        "createdAt": 1794012301249
+      }
+    ],
+    "connections": [],
     "stories": [],
     "reflections": [],
     "emergentEvents": []

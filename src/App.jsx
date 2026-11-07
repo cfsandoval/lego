@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import LobbyModal from './components/LobbyModal';
 import LegoBoard3D from './components/LegoBoard3D';
+import SystemConfigModal from './components/SystemConfigModal';
 import { useLanguage } from './context/LanguageContext';
 import {
   BRICK_CATALOG,
@@ -10,7 +11,18 @@ import {
   APPLICATION_LEVELS,
   WORKSHOP_TEMPLATES,
   CONNECTION_TYPES,
+  getStoredTemplates,
+  saveStoredTemplates,
+  resetStoredTemplates,
 } from './data/lspMethodology';
+import {
+  subscribeToTemplatesFirestore,
+  saveTemplatesToFirestore,
+  getOrCreateRoomInFirestore,
+  saveRoomToFirestore,
+  subscribeToRoomFirestore,
+  isFirebaseConfigured,
+} from './firebase';
 import { exportWorkshopToJSON, exportWorkshopToPDF } from './utils/reportExporter';
 import {
   Blocks,
@@ -38,6 +50,8 @@ import {
   Send,
   Zap,
   Languages,
+  Settings,
+  Database,
 } from 'lucide-react';
 
 export default function App() {
@@ -153,6 +167,9 @@ export default function App() {
   const [connectionType, setConnectionType] = useState(CONNECTION_TYPES[1]);
   const [rightTab, setRightTab] = useState('stories'); // 'stories' | 'metaphors' | 'reflect' | 'facilitator'
   const [emergentAlert, setEmergentAlert] = useState(null);
+  const [templates, setTemplates] = useState(() => getStoredTemplates());
+  const [isSystemConfigOpen, setIsSystemConfigOpen] = useState(false);
+  const [firebaseSyncStatus, setFirebaseSyncStatus] = useState('synced'); // 'synced' | 'saving' | 'error'
 
   // Story form states
   const [storyTitle, setStoryTitle] = useState('');
@@ -173,44 +190,192 @@ export default function App() {
   const socketRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  // Subscribe to Firestore system templates (primary backend)
+  useEffect(() => {
+    const unsubTpl = subscribeToTemplatesFirestore(
+      (cloudTemplates) => {
+        if (Array.isArray(cloudTemplates) && cloudTemplates.length > 0) {
+          saveStoredTemplates(cloudTemplates);
+          setTemplates(cloudTemplates);
+          setFirebaseSyncStatus('synced');
+        }
+      },
+      () => {
+        setFirebaseSyncStatus('error');
+      }
+    );
+
+    if (!isFirebaseConfigured()) {
+      fetch('/api/templates')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && Array.isArray(data.templates) && data.templates.length > 0) {
+            saveStoredTemplates(data.templates);
+            setTemplates(data.templates);
+          }
+        })
+        .catch(() => {});
+    }
+
+    return () => unsubTpl();
+  }, []);
+
+  const commitRoomUpdate = (updater) => {
+    setRoomState((prev) => {
+      const base = prev || createFallbackRoom(sessionUser);
+      const next = typeof updater === 'function' ? updater(base) : { ...base, ...updater };
+      if (next?.roomCode) {
+        setFirebaseSyncStatus('saving');
+        saveRoomToFirestore(next.roomCode, next)
+          .then((ok) => {
+            if (ok) setFirebaseSyncStatus('synced');
+          })
+          .catch((err) => {
+            console.error('Firestore room save error:', err);
+            setFirebaseSyncStatus('error');
+          });
+      }
+      return next;
+    });
+  };
+
+  const handleSaveTemplates = (updatedTemplates) => {
+    saveStoredTemplates(updatedTemplates);
+    setTemplates(updatedTemplates);
+    const editorName = sessionUser?.name || 'Usuario';
+    setFirebaseSyncStatus('saving');
+    saveTemplatesToFirestore(updatedTemplates, editorName)
+      .then(() => setFirebaseSyncStatus('synced'))
+      .catch((err) => {
+        console.error('Firestore templates save error:', err);
+        setFirebaseSyncStatus('error');
+      });
+    socketRef.current?.emit('templates:update', updatedTemplates);
+    fetch('/api/templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templates: updatedTemplates }),
+    }).catch(() => {});
+  };
+
+  const handleResetTemplates = () => {
+    const defaults = resetStoredTemplates();
+    setTemplates(defaults);
+    const editorName = sessionUser?.name || 'Usuario';
+    setFirebaseSyncStatus('saving');
+    saveTemplatesToFirestore(defaults, editorName)
+      .then(() => setFirebaseSyncStatus('synced'))
+      .catch(() => setFirebaseSyncStatus('error'));
+    socketRef.current?.emit('templates:update', null);
+    fetch('/api/templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templates: null }),
+    }).catch(() => {});
+  };
+
+  // Real-time Cloud Firestore Room Synchronization (primary backend: legos-a6a1d)
   useEffect(() => {
     if (!sessionUser) return;
 
-    const serverUrl = import.meta.env.VITE_SERVER_URL || '/';
-    const socket = io(serverUrl, {
-      transports: ['websocket', 'polling'],
-    });
-    socketRef.current = socket;
+    let unsubRoom = () => {};
+    const initialRoom = createFallbackRoom(sessionUser);
 
-    socket.on('connect', () => {
-      socket.emit('room:join', {
-        roomCode: sessionUser.roomCode,
-        participantId: sessionUser.id,
-        name: sessionUser.name,
-        role: sessionUser.role,
-        avatarColor: sessionUser.avatarColor,
-        templateId: sessionUser.templateId,
+    setFirebaseSyncStatus('saving');
+    getOrCreateRoomInFirestore(sessionUser.roomCode, initialRoom)
+      .then((cloudRoom) => {
+        if (cloudRoom) {
+          const updatedParticipants = {
+            ...(cloudRoom.participants || {}),
+            [sessionUser.id]: {
+              id: sessionUser.id,
+              name: sessionUser.name || 'Usuario',
+              role: sessionUser.role,
+              avatarColor: sessionUser.avatarColor,
+              online: true,
+              ready: cloudRoom.participants?.[sessionUser.id]?.ready || false,
+            },
+          };
+          const merged = { ...cloudRoom, participants: updatedParticipants };
+          setRoomState(merged);
+          saveRoomToFirestore(sessionUser.roomCode, merged)
+            .then(() => setFirebaseSyncStatus('synced'))
+            .catch(() => setFirebaseSyncStatus('error'));
+        }
+      })
+      .catch(() => {
+        setFirebaseSyncStatus('error');
       });
-    });
 
-    socket.on('room:state', (updatedRoom) => {
-      setRoomState(updatedRoom);
-    });
+    unsubRoom = subscribeToRoomFirestore(
+      sessionUser.roomCode,
+      (remoteRoom) => {
+        if (remoteRoom) {
+          setRoomState(remoteRoom);
+          setFirebaseSyncStatus('synced');
+          if (Array.isArray(remoteRoom.emergentEvents) && remoteRoom.emergentEvents.length > 0) {
+            const latestEvent = remoteRoom.emergentEvents[0];
+            if (latestEvent?.timestamp && Date.now() - Number(latestEvent.timestamp) < 8000) {
+              setEmergentAlert(latestEvent);
+            }
+          }
+        }
+      },
+      () => {
+        setFirebaseSyncStatus('error');
+      }
+    );
 
-    socket.on('timer:tick', (timerObj) => {
-      setRoomState((prev) => (prev ? { ...prev, timer: timerObj } : prev));
-    });
+    // Only use local Socket.IO as fallback if Firebase is not configured
+    if (!isFirebaseConfigured()) {
+      const serverUrl = import.meta.env.VITE_SERVER_URL || '/';
+      const socket = io(serverUrl, {
+        transports: ['websocket', 'polling'],
+      });
+      socketRef.current = socket;
 
-    socket.on('emergent:alert', (alertObj) => {
-      setEmergentAlert(alertObj);
-    });
+      socket.on('connect', () => {
+        socket.emit('room:join', {
+          roomCode: sessionUser.roomCode,
+          participantId: sessionUser.id,
+          name: sessionUser.name,
+          role: sessionUser.role,
+          avatarColor: sessionUser.avatarColor,
+          templateId: sessionUser.templateId,
+        });
+      });
+
+      socket.on('room:state', (updatedRoom) => {
+        setRoomState(updatedRoom);
+      });
+
+      socket.on('templates:state', (serverTemplates) => {
+        if (Array.isArray(serverTemplates) && serverTemplates.length > 0) {
+          saveStoredTemplates(serverTemplates);
+          setTemplates(serverTemplates);
+        }
+      });
+
+      socket.on('timer:tick', (timerObj) => {
+        setRoomState((prev) => (prev ? { ...prev, timer: timerObj } : prev));
+      });
+
+      socket.on('emergent:alert', (alertObj) => {
+        setEmergentAlert(alertObj);
+      });
+
+      return () => {
+        unsubRoom();
+        socket.disconnect();
+      };
+    }
 
     return () => {
-      socket.disconnect();
+      unsubRoom();
     };
   }, [sessionUser]);
 
-  // Persist roomState locally as fallback when working offline/serverless
+  // Persist roomState locally as cache backup
   useEffect(() => {
     if (roomState?.roomCode) {
       try {
@@ -221,7 +386,7 @@ export default function App() {
     }
   }, [roomState]);
 
-  // Local timer tick fallback when server socket is not connected
+  // Timer tick interval
   useEffect(() => {
     const interval = setInterval(() => {
       if (socketRef.current?.connected) return;
@@ -246,18 +411,19 @@ export default function App() {
       sessionUser?.id || `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const newUser = {
       id: existingId,
-      name,
-      roomCode,
+      name: (name || 'Usuario').trim() || 'Usuario',
+      roomCode: (roomCode || 'TEST1').trim().toUpperCase(),
       role,
       avatarColor,
       templateId,
     };
     localStorage.setItem('lsp_session_user', JSON.stringify(newUser));
     setSessionUser(newUser);
-    setRoomState((prev) => {
-      const base = prev && prev.roomCode === roomCode ? prev : createFallbackRoom(newUser);
+    commitRoomUpdate((prev) => {
+      const base = prev && prev.roomCode === newUser.roomCode ? prev : createFallbackRoom(newUser);
       return {
         ...base,
+        roomCode: newUser.roomCode,
         templateId: templateId || base.templateId,
         participants: {
           ...(base.participants || {}),
@@ -284,11 +450,27 @@ export default function App() {
   };
 
   if (!sessionUser) {
-    return <LobbyModal onJoinRoom={handleJoinRoom} />;
+    return (
+      <>
+        <LobbyModal
+          onJoinRoom={handleJoinRoom}
+          templates={templates}
+          onOpenSystemConfig={() => setIsSystemConfigOpen(true)}
+        />
+        <SystemConfigModal
+          isOpen={isSystemConfigOpen}
+          onClose={() => setIsSystemConfigOpen(false)}
+          templates={templates}
+          onSaveTemplates={handleSaveTemplates}
+          onResetTemplates={handleResetTemplates}
+        />
+      </>
+    );
   }
 
   const currentTemplate =
-    WORKSHOP_TEMPLATES.find((t) => t.id === (roomState?.templateId || sessionUser.templateId)) ||
+    templates.find((t) => t.id === (roomState?.templateId || sessionUser.templateId)) ||
+    templates[0] ||
     WORKSHOP_TEMPLATES[0];
 
   const currentStageIndex = roomState?.currentStageIndex || 0;
@@ -314,9 +496,9 @@ export default function App() {
   const participantsList = Object.values(roomState?.participants || {});
   const myParticipant = roomState?.participants?.[sessionUser.id] || sessionUser;
 
-  // Socket Actions (with optimistic local state updates so Vercel/offline works seamlessly)
+  // Firestore + Socket Actions
   const updateWorkshopState = (payload) => {
-    setRoomState((prev) => (prev ? { ...prev, ...payload } : prev));
+    commitRoomUpdate((prev) => (prev ? { ...prev, ...payload } : prev));
     socketRef.current?.emit('workshop:updateState', payload);
   };
 
@@ -349,7 +531,7 @@ export default function App() {
       narrative: storyNarrative.trim(),
       timestamp: Date.now(),
     };
-    setRoomState((prev) =>
+    commitRoomUpdate((prev) =>
       prev ? { ...prev, stories: [newStory, ...(prev.stories || [])] } : prev
     );
     socketRef.current?.emit('story:save', newStory);
@@ -367,7 +549,7 @@ export default function App() {
       text: reflectionText.trim(),
       timestamp: Date.now(),
     };
-    setRoomState((prev) =>
+    commitRoomUpdate((prev) =>
       prev ? { ...prev, reflections: [newRef, ...(prev.reflections || [])] } : prev
     );
     socketRef.current?.emit('reflection:add', newRef);
@@ -381,7 +563,7 @@ export default function App() {
     reader.onload = (ev) => {
       try {
         const parsed = JSON.parse(ev.target.result);
-        setRoomState((prev) => (prev ? { ...prev, ...parsed } : parsed));
+        commitRoomUpdate((prev) => (prev ? { ...prev, ...parsed } : parsed));
         socketRef.current?.emit('room:importState', parsed);
       } catch (err) {
         alert(language === 'en' ? 'Invalid JSON file.' : 'Archivo JSON inválido.');
@@ -402,9 +584,23 @@ export default function App() {
             <Blocks className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-extrabold text-sm text-white tracking-tight">
                 LSP Studio 3D
+              </span>
+              <span
+                className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[10px] font-semibold"
+                title={
+                  language === 'en'
+                    ? `Version v${typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '2.0.0'} — Last updated: ${typeof __LAST_UPDATED__ !== 'undefined' ? __LAST_UPDATED__ : ''}`
+                    : `Versión v${typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '2.0.0'} — Última actualización: ${typeof __LAST_UPDATED__ !== 'undefined' ? __LAST_UPDATED__ : ''}`
+                }
+              >
+                v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '2.0.0'} •{' '}
+                {language === 'en' ? 'Updated:' : 'Act:'}{' '}
+                {typeof __LAST_UPDATED__ !== 'undefined'
+                  ? __LAST_UPDATED__
+                  : new Date().toLocaleDateString('es-CL')}
               </span>
               <span className="px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/40 text-amber-300 font-mono text-xs font-bold">
                 {t('roomLabel')}: {roomState?.roomCode || sessionUser.roomCode}
@@ -412,6 +608,26 @@ export default function App() {
               <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[11px]">
                 <Users className="w-3 h-3 text-sky-400" />
                 {participantsList.filter((p) => p.online).length} {language === 'en' ? 'online' : 'en línea'}
+              </span>
+              <span
+                className={`hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                  firebaseSyncStatus === 'error'
+                    ? 'bg-rose-500/15 border-rose-500/40 text-rose-300'
+                    : firebaseSyncStatus === 'saving'
+                      ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                      : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                }`}
+              >
+                <Database className="w-3 h-3" />
+                {firebaseSyncStatus === 'saving'
+                  ? language === 'en'
+                    ? 'Firebase: Saving...'
+                    : 'Firebase: Guardando...'
+                  : firebaseSyncStatus === 'error'
+                    ? 'Firebase: Error'
+                    : language === 'en'
+                      ? 'Firebase: Saved ✓'
+                      : 'Firebase: Guardado ✓'}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 truncate max-w-xs sm:max-w-md">
@@ -478,7 +694,7 @@ export default function App() {
             <span>{formatTime(timer.remainingSeconds)}</span>
             <button
               onClick={() => {
-                setRoomState((prev) =>
+                commitRoomUpdate((prev) =>
                   prev
                     ? {
                         ...prev,
@@ -501,7 +717,7 @@ export default function App() {
             <button
               onClick={() => {
                 const dur = currentStage.recommendedSeconds || 240;
-                setRoomState((prev) =>
+                commitRoomUpdate((prev) =>
                   prev
                     ? {
                         ...prev,
@@ -527,7 +743,7 @@ export default function App() {
 
           <button
             onClick={() => {
-              setRoomState((prev) => {
+              commitRoomUpdate((prev) => {
                 if (!prev) return prev;
                 const p = prev.participants?.[sessionUser.id] || sessionUser;
                 return {
@@ -553,12 +769,27 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => roomState && exportWorkshopToPDF(roomState, language)}
+            onClick={() => roomState && exportWorkshopToPDF(roomState, language, templates)}
             className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow transition"
             title={t('exportPdf')}
           >
             <FileText className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{t('exportPdf')}</span>
+          </button>
+
+          <button
+            onClick={() => setIsSystemConfigOpen(true)}
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition"
+            title={
+              language === 'en'
+                ? 'System Configuration & Templates Editor (ES/EN)'
+                : 'Configuración del Sistema y Editor de Plantillas (ES/EN)'
+            }
+          >
+            <Settings className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden lg:inline">
+              {language === 'en' ? 'Templates (ES/EN)' : 'Plantillas (ES/EN)'}
+            </span>
           </button>
 
           <button
@@ -659,7 +890,7 @@ export default function App() {
                     onClick={() => {
                       setSelectedColor(c.hex);
                       if (selectedBrickId) {
-                        setRoomState((prev) =>
+                        commitRoomUpdate((prev) =>
                           prev
                             ? {
                                 ...prev,
@@ -779,11 +1010,11 @@ export default function App() {
             </div>
           </div>
 
-          {/* Clear my bricks action */}
+              {/* Clear my bricks action */}
           <div className="pt-2 border-t border-slate-800 flex gap-2">
             <button
               onClick={() => {
-                setRoomState((prev) => {
+                commitRoomUpdate((prev) => {
                   if (!prev) return prev;
                   const myIds = new Set(
                     (prev.bricks || [])
@@ -820,15 +1051,14 @@ export default function App() {
             selectedBrickId={selectedBrickId}
             onSelectBrick={setSelectedBrickId}
             onAddBrick={(brick) => {
-              // Optimistic local update (creates fallback room if prev is somehow null)
-              setRoomState((prev) => {
+              commitRoomUpdate((prev) => {
                 const base = prev || createFallbackRoom(sessionUser);
                 return { ...base, bricks: [...(base.bricks || []), brick] };
               });
               socketRef.current?.emit('brick:add', brick);
             }}
             onUpdateBrick={(brickId, updates) => {
-              setRoomState((prev) => {
+              commitRoomUpdate((prev) => {
                 const base = prev || createFallbackRoom(sessionUser);
                 return {
                   ...base,
@@ -840,7 +1070,7 @@ export default function App() {
               socketRef.current?.emit('brick:update', { brickId, updates });
             }}
             onDeleteBrick={(brickId) => {
-              setRoomState((prev) => {
+              commitRoomUpdate((prev) => {
                 const base = prev || createFallbackRoom(sessionUser);
                 return {
                   ...base,
@@ -853,14 +1083,14 @@ export default function App() {
               socketRef.current?.emit('brick:delete', { brickId });
             }}
             onAddConnection={(conn) => {
-              setRoomState((prev) => {
+              commitRoomUpdate((prev) => {
                 const base = prev || createFallbackRoom(sessionUser);
                 return { ...base, connections: [...(base.connections || []), conn] };
               });
               socketRef.current?.emit('connection:add', conn);
             }}
             onDeleteConnection={(connectionId) => {
-              setRoomState((prev) => {
+              commitRoomUpdate((prev) => {
                 const base = prev || createFallbackRoom(sessionUser);
                 return {
                   ...base,
@@ -1143,7 +1373,7 @@ export default function App() {
                           </div>
                           <button
                             onClick={() => {
-                              setRoomState((prev) =>
+                              commitRoomUpdate((prev) =>
                                 prev
                                   ? {
                                       ...prev,
@@ -1236,6 +1466,50 @@ export default function App() {
             {/* TAB 4: FACILITATOR CONTROLS */}
             {rightTab === 'facilitator' && (
               <div className="space-y-4">
+                {/* Active Template & System Config Quick Access */}
+                <div className="bg-slate-950 border border-amber-500/30 rounded-xl p-3 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-amber-300 flex items-center gap-1.5">
+                      <Settings className="w-3.5 h-3.5" />
+                      {language === 'en' ? 'Workshop Template & System Config' : 'Plantilla Activa y Configuración'}
+                    </span>
+                  </div>
+                  <select
+                    value={currentTemplate.id}
+                    onChange={(e) => {
+                      const nextTpl = templates.find((t) => t.id === e.target.value);
+                      if (!nextTpl) return;
+                      const firstStage = nextTpl.stages?.[0];
+                      const dur = firstStage?.recommendedSeconds || 240;
+                      updateWorkshopState({
+                        templateId: nextTpl.id,
+                        currentStageIndex: 0,
+                        levelMode: firstStage?.level || 'skills',
+                        corePhase: 'challenge',
+                        customQuestion: '',
+                        timer: { remainingSeconds: dur, totalSeconds: dur, isRunning: false },
+                      });
+                    }}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-semibold focus:border-amber-400 focus:outline-none"
+                  >
+                    {templates.map((tpl) => (
+                      <option key={tpl.id} value={tpl.id}>
+                        {language === 'en' && tpl.nameEn ? tpl.nameEn : tpl.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setIsSystemConfigOpen(true)}
+                    className="w-full py-1.5 px-3 rounded-lg bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-300 font-bold flex items-center justify-center gap-1.5 transition"
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                    {language === 'en'
+                      ? 'Edit Templates in Spanish & English'
+                      : 'Editar Plantillas en Español e Inglés'}
+                  </button>
+                </div>
+
                 <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
                   <h3 className="font-bold text-amber-400 flex items-center gap-1.5">
                     <Crown className="w-4 h-4" />
@@ -1295,8 +1569,14 @@ export default function App() {
                       <button
                         key={i}
                         onClick={() => {
-                          setEmergentAlert(ev);
-                          socketRef.current?.emit('emergent:trigger', ev);
+                          const evWithTime = { ...ev, id: `ev-${Date.now()}`, timestamp: Date.now() };
+                          setEmergentAlert(evWithTime);
+                          commitRoomUpdate((prev) =>
+                            prev
+                              ? { ...prev, emergentEvents: [evWithTime, ...(prev.emergentEvents || [])] }
+                              : prev
+                          );
+                          socketRef.current?.emit('emergent:trigger', evWithTime);
                         }}
                         className="w-full p-2 rounded-lg bg-rose-950/50 hover:bg-rose-900/60 border border-rose-500/40 text-left transition"
                       >
@@ -1330,6 +1610,7 @@ export default function App() {
                       onClick={() => {
                         if (!customEmergentTitle.trim()) return;
                         const customEv = {
+                          id: `ev-${Date.now()}`,
                           title: customEmergentTitle,
                           titleEn: customEmergentTitle,
                           description:
@@ -1340,8 +1621,14 @@ export default function App() {
                             customEmergentQuestion ||
                             (language === 'en' ? 'How does our model adapt to this sudden change?' : '¿Cómo se adapta nuestro modelo ante este cambio?'),
                           impactQuestionEn: customEmergentQuestion || 'How does our model adapt to this sudden change?',
+                          timestamp: Date.now(),
                         };
                         setEmergentAlert(customEv);
+                        commitRoomUpdate((prev) =>
+                          prev
+                            ? { ...prev, emergentEvents: [customEv, ...(prev.emergentEvents || [])] }
+                            : prev
+                        );
                         socketRef.current?.emit('emergent:trigger', customEv);
                         setCustomEmergentTitle('');
                         setCustomEmergentQuestion('');
@@ -1387,6 +1674,15 @@ export default function App() {
           </div>
         </aside>
       </div>
+
+      {/* SYSTEM CONFIGURATION & BILINGUAL TEMPLATES MODAL */}
+      <SystemConfigModal
+        isOpen={isSystemConfigOpen}
+        onClose={() => setIsSystemConfigOpen(false)}
+        templates={templates}
+        onSaveTemplates={handleSaveTemplates}
+        onResetTemplates={handleResetTemplates}
+      />
     </div>
   );
 }

@@ -284,60 +284,60 @@ export const CORE_PHASES = [
   },
 ];
 
-// Niveles de Aplicación (AT1 a AT7 resumidos en los 4 niveles operativos de taller)
+// Niveles de Aplicación de LEGO Serious Play (Técnicas de Aplicación AT1 a AT7 del marco metodológico)
 export const APPLICATION_LEVELS = [
   {
     id: 'skills',
-    code: 'Nivel 0',
-    codeEn: 'Level 0',
-    name: 'Skills Building (Calentamiento)',
-    nameEn: 'Skills Building (Warm-Up)',
-    subtitle: 'Torre, Metáfora y Narrativa',
-    subtitleEn: 'Tower, Metaphor & Story',
-    description: 'Familiarización con el lenguaje 3D: construir estabilidad técnica, usar una pieza como metáfora y contar una historia breve.',
-    descriptionEn: 'Mastering the 3D language: technical construction, giving metaphorical meaning to bricks, and brief storytelling.',
+    code: 'Skills Building',
+    codeEn: 'Skills Building',
+    name: 'Construcción de Habilidades y Calentamiento',
+    nameEn: 'Skills Building & Warm-Up',
+    subtitle: 'Torre de Estabilidad, Criatura / Metáforas y Narrativa Personal',
+    subtitleEn: 'Stability Tower, Creature / Metaphor & Personal Story',
+    description: 'Fase preparatoria fundamental para entrar en estado de flujo (Flow): construir con las manos, asignar metáforas no literales y ejercitar la escucha activa y la etiqueta LSP.',
+    descriptionEn: 'Essential preparatory phase to achieve Flow: hands-on building, assigning non-literal metaphors, and practicing active listening and LSP etiquette.',
   },
   {
     id: 'individual',
     code: 'Nivel 1 (AT1)',
     codeEn: 'Level 1 (AT1)',
-    name: 'Modelos Individuales',
-    nameEn: 'Individual Models',
-    subtitle: 'Identidad y Perspectiva Propia',
-    subtitleEn: 'Personal Perspective & Identity',
-    description: 'Cada participante construye en su zona individual su respuesta al desafío, exteriorizando su conocimiento tácito.',
-    descriptionEn: 'Each participant builds their individual response to externalize tacit knowledge.',
+    name: 'Modelos Individuales (Core & Aspirational Identity)',
+    nameEn: 'Individual Models (Core & Aspirational Identity)',
+    subtitle: 'Identidad, Percepción Propia y Conocimiento Tácito',
+    subtitleEn: 'Identity, Self-Perception & Tacit Knowledge',
+    description: 'Cada participante construye simultáneamente en su zona individual su respuesta al desafío. Se externalizan pensamientos y se identifican los "Ladrillos Rojos" (núcleos esenciales).',
+    descriptionEn: 'Each participant builds simultaneously in their zone. Individual thoughts are externalized and irreplaceable "Red Bricks" are marked.',
   },
   {
     id: 'shared',
     code: 'Nivel 2 (AT2)',
     codeEn: 'Level 2 (AT2)',
-    name: 'Modelo Compartido',
-    nameEn: 'Shared Model',
-    subtitle: 'Visión Colectiva Sin Votación',
-    subtitleEn: 'Co-created Consensus Without Voting',
-    description: 'Integración de los "Ladrillos Rojos" (núcleos esenciales) de cada modelo individual en un único modelo central consensuado.',
-    descriptionEn: 'Synthesizing the essential "Red Bricks" from all individual builds into one shared central model.',
+    name: 'Modelos Compartidos (Shared Models)',
+    nameEn: 'Shared Models (Co-Created Consensus)',
+    subtitle: 'Negociación y Síntesis Colectiva Sin Votación',
+    subtitleEn: 'Collective Synthesis Without Compromise or Voting',
+    description: 'Construcción conjunta en el centro de la mesa integrando las piezas clave de todos. No se busca el mínimo común denominador, sino que cada voz esté genuinamente representada.',
+    descriptionEn: 'Co-building in the center weaving everyone\'s vital parts. Strives for full authentic representation rather than lowest common denominator compromise.',
   },
   {
     id: 'landscape',
     code: 'Nivel 3 (AT3–AT7)',
     codeEn: 'Level 3 (AT3–AT7)',
-    name: 'Paisaje, Conexiones y Sistema',
-    nameEn: 'Landscape, Connections & System',
-    subtitle: 'Ecosistema, Vínculos y Escenarios "What-If"',
-    subtitleEn: 'Ecosystem, Systemic Ties & "What-If" Stress Tests',
-    description: 'Ubicación de modelos en el paisaje, trazado de conexiones y prueba de eventos emergentes para extraer Principios Rectores.',
-    descriptionEn: 'Placing models in relation, drawing links and simulating emergent shocks to extract robust decision principles.',
+    name: 'Paisaje, Conexiones y Simulaciones de Estrés (AT3-AT7)',
+    nameEn: 'Landscape, Connections & Stress Simulations (AT3-AT7)',
+    subtitle: 'Posicionamiento, Vínculos Sistémicos, Escenarios y Principios Rectores',
+    subtitleEn: 'Spatial Layout, Systemic Links, What-If Shocks & Guiding Heuristics',
+    description: 'Creación del Paisaje (AT3), Conexiones estructurales/flexibles/causales (AT4), Sistema Integral (AT5), Simulación de Eventos Emergentes What-If (AT6) y Extracción de Principios Rectores Simples (AT7).',
+    descriptionEn: 'Covers Landscape layout (AT3), physical and causal Connections (AT4), Unified System (AT5), Emergent What-If simulations (AT6), and Simple Guiding Principles (AT7).',
   },
 ];
 
-// Plantillas de Talleres Especializados
-export const WORKSHOP_TEMPLATES = [
+// Plantillas de Talleres Especializados (Valores por Defecto)
+export const DEFAULT_WORKSHOP_TEMPLATES = [
   {
     id: 'prospectiva-2050',
-    name: 'Prospectiva Territorial y Visión 2050 (CEPAL / ILPES)',
-    nameEn: 'Territorial Foresight & 2050 Vision (ECLAC / ILPES)',
+    name: 'Prospectiva Territorial',
+    nameEn: 'Territorial Foresight',
     badge: 'Prospectiva & Territorio',
     badgeEn: 'Foresight & Territory',
     summary: 'Taller completo de construcción de visión territorial a largo plazo, articulación de actores y resiliencia ante choques externos.',
@@ -549,7 +549,435 @@ export const WORKSHOP_TEMPLATES = [
       },
     ],
   },
+  {
+    id: 'lsp-standard-core',
+    name: 'Taller Estándar LSP (Manual Oficial Open Source)',
+    nameEn: 'Standard LSP Workshop (Official Open-Source Manual)',
+    badge: 'Manual Oficial LSP',
+    badgeEn: 'Official LSP Manual',
+    summary: 'La secuencia formativa canónica del manual Open Source: Skills Building (Torre/Metáforas), Identidad Núcleo y Aspiracional, Modelo Compartido, Conexiones del Paisaje y Visión Futura Compartida.',
+    summaryEn: 'The canonical sequence from the official Open Source manual: Skills Building (Tower/Metaphors), Core & Aspirational Identity, Shared Team Life, Landscape Connections, and Aspirational Future.',
+    stages: [
+      {
+        level: 'skills',
+        title: 'Etapa 0: Skills Building — Torre, Metáfora y Lunes por la Mañana',
+        titleEn: 'Stage 0: Skills Building — Tower, Metaphor & Monday Mornings',
+        question: '1) Construye una torre y pon a prueba su estabilidad. 2) Construye una criatura y transfórmala en el "jefe ideal o peor pesadilla". 3) Construye "Mi lunes por la mañana" y narra tu historia.',
+        questionEn: '1) Build a tower and test its stability. 2) Build a creature and turn it into the "ideal boss or worst nightmare". 3) Build "My Monday morning" and share your story.',
+        recommendedSeconds: 300,
+        facilitatorTip: 'Enseña la etiqueta: no hay respuestas incorrectas, pensar con las manos, escuchar con los ojos y respetar que sólo el constructor sabe el significado de su modelo.',
+        facilitatorTipEn: 'Teach the etiquette: no wrong answers, think with your hands, listen with your eyes, and honor that only the builder knows the meaning.',
+      },
+      {
+        level: 'individual',
+        title: 'Etapa 1: Identidad Núcleo y Aspiracional ("Quién soy en el equipo")',
+        titleEn: 'Stage 1: Core & Aspirational Identity ("Who I am on this team")',
+        question: 'Construye un modelo que muestre quién eres en este equipo: ¿Qué aportas? ¿Qué podrías aportar? Agrega una adición que muestre cómo crees que otros te perciben y quién eres en tu mejor momento.',
+        questionEn: 'Build a model showing who you are on this team: What do you bring? What could you bring? Add what others perceive and who you are at your best.',
+        recommendedSeconds: 360,
+        facilitatorTip: 'Pide a los participantes que guarden su modelo intacto, ya que será conectado más adelante.',
+        facilitatorTipEn: 'Ask participants to preserve their individual models as they will be positioned and connected later.',
+      },
+      {
+        level: 'individual',
+        title: 'Etapa 2: Percepción Individual de la Vida del Equipo',
+        titleEn: 'Stage 2: Individual Perception of Team Life',
+        question: '¿Cómo percibes a tu equipo hoy? Construye un nuevo modelo que exprese el espíritu, la energía y el "sentir" actual del equipo.',
+        questionEn: 'How do you perceive your team? Build a new model showing what you believe your team is all about — the spirit and feel of the team right now.',
+        recommendedSeconds: 300,
+        facilitatorTip: 'Cada participante comparte su modelo en turno estricto sin interrupciones.',
+        facilitatorTipEn: 'Each participant shares their model in strict turn without interruptions.',
+      },
+      {
+        level: 'shared',
+        title: 'Etapa 3: Modelo Compartido de la Vida del Equipo',
+        titleEn: 'Stage 3: Shared Model of Team Life',
+        question: 'Construyan juntos en el centro de la mesa un modelo compartido que sintetice la percepción y espíritu del equipo, combinando los significados esenciales de todos.',
+        questionEn: 'Co-build in the center a shared model capturing the team\'s perception of team life, negotiating and integrating everyone\'s core meanings without compromise.',
+        recommendedSeconds: 420,
+        facilitatorTip: 'No buscar el mínimo común denominador: el modelo debe reflejar todos los matices y aportes del grupo.',
+        facilitatorTipEn: 'Do not settle for lowest common denominators; ensure every member\'s essence is recognized.',
+      },
+      {
+        level: 'landscape',
+        title: 'Etapa 4: Conexiones al Modelo Compartido (Paisaje)',
+        titleEn: 'Stage 4: Landscape Positioning & Team Connections',
+        question: 'Ubica tu modelo de identidad individual en el paisaje con respecto al modelo compartido del equipo y construye 2 o 3 conexiones físicas (rígidas o flexibles) explicando con qué te sientes más conectado y por qué.',
+        questionEn: 'Position your identity model in relation to the shared team model and build 2-3 connections showing what in your team life you feel most connected to and how.',
+        recommendedSeconds: 360,
+        facilitatorTip: 'Explora la distancia espacial y el tipo de vínculo entre las identidades personales y la vida del equipo.',
+        facilitatorTipEn: 'Explore spatial distance and connection types between personal identities and team life.',
+      },
+      {
+        level: 'shared',
+        title: 'Etapa 5: Visión Aspiracional Compartida del Futuro',
+        titleEn: 'Stage 5: Shared Aspirational Team Future',
+        question: 'Mirando la mesa completa interconectada: construyan el modelo compartido de lo que aspiran llegar a ser como equipo en el futuro y definan sus Principios Rectores.',
+        questionEn: 'Looking at the interconnected landscape: co-build the shared aspirational model of what you aspire to be as a team in the future.',
+        recommendedSeconds: 420,
+        facilitatorTip: 'Un voluntario cuenta la historia global y el resto del equipo aporta detalles.',
+        facilitatorTipEn: 'A volunteer tells the global story and team members enrich with insights.',
+      },
+    ],
+    emergentPresets: [
+      {
+        title: 'Reestructuración o Cambio de Liderazgo',
+        titleEn: 'Restructuring or Leadership Shift',
+        description: 'La organización anuncia un cambio estructural que redefine responsabilidades clave en el equipo.',
+        descriptionEn: 'The organization introduces structural changes altering core team responsibilities.',
+        impactQuestion: '¿Qué conexión entre tu identidad y el equipo resiste el cambio y cuál debe adaptarse?',
+        impactQuestionEn: 'Which link between your identity and the team sustains the shift, and which must adapt?',
+      },
+      {
+        title: 'Sobrecarga de Demandas Concurrentes',
+        titleEn: 'Surge in Concurrent High-Stakes Demands',
+        description: 'Se duplica la carga de trabajo urgente sin aumento inmediato de personal.',
+        descriptionEn: 'Workload surges dramatically under rigid deadlines without immediate staff growth.',
+        impactQuestion: '¿Qué principio del modelo aspiracional guía nuestras prioridades no negociables?',
+        impactQuestionEn: 'What principle from the aspirational model dictates our non-negotiable priorities?',
+      },
+    ],
+  },
+  {
+    id: 'innovacion-producto',
+    name: 'Innovación, Propuesta de Valor y Nuevos Productos (L1-L3)',
+    nameEn: 'Innovation, Value Proposition & New Products (L1-L3)',
+    badge: 'Innovación & Producto',
+    badgeEn: 'Innovation & Products',
+    summary: 'Diseño centrado en el usuario: desde el dolor del cliente (individual) hasta la solución disruptiva compartida y el ecosistema de mercado (paisaje).',
+    summaryEn: 'Human-centered design: from individual customer pain-points to co-created breakthrough value propositions and market landscape.',
+    stages: [
+      {
+        level: 'skills',
+        title: 'Etapa 0: Calentamiento — Metáfora de Frustración del Usuario',
+        titleEn: 'Stage 0: Warm-up — Metaphor of Customer Friction',
+        question: 'Construye en 2 minutos un modelo que simbolice la mayor frustración o fricción que vive hoy un usuario o beneficiario de nuestro servicio.',
+        questionEn: 'Build in 2 minutes what user friction or pain looks like symbolically.',
+        recommendedSeconds: 150,
+        facilitatorTip: 'Fomenta el uso de colores y formas no convencionales para expresar emociones.',
+        facilitatorTipEn: 'Encourage non-conventional shapes and colors to express emotion.',
+      },
+      {
+        level: 'individual',
+        title: 'Etapa 1: El Atributo Diferenciador Disruptivo',
+        titleEn: 'Stage 1: Breakthrough Differentiating Feature',
+        question: 'Construye individualmente la característica, tecnología o experiencia radical que resolvería ese dolor de una forma que nadie más está ofreciendo.',
+        questionEn: 'Build the radical feature, mechanism, or experience that solves this pain like no other offering.',
+        recommendedSeconds: 300,
+        facilitatorTip: 'Identifica el "Ladrillo Rojo" de cada propuesta (la propuesta de valor esencial).',
+        facilitatorTipEn: 'Identify the Red Brick representing the irreplaceable value element.',
+      },
+      {
+        level: 'shared',
+        title: 'Etapa 2: La Solución Integrada Compartida',
+        titleEn: 'Stage 2: The Unified Co-created Solution',
+        question: 'Integren en el centro de la mesa los atributos clave de todos en un prototipo conceptual único de nuevo producto o servicio.',
+        questionEn: 'Co-build in the center the unified concept prototype weaving together everyone\'s breakthrough elements.',
+        recommendedSeconds: 420,
+        facilitatorTip: 'Asegura que el modelo no sea un monstruo de partes sueltas, sino una propuesta coherente.',
+        facilitatorTipEn: 'Ensure the prototype forms an integrated coherent narrative, not loose parts.',
+      },
+      {
+        level: 'landscape',
+        title: 'Etapa 3: Ecosistema de Mercado y Choque Competitivo',
+        titleEn: 'Stage 3: Market Ecosystem & Competitive Shock',
+        question: 'Ubica a los competidores, canales y aliados alrededor de la solución. Conéctalos y simula el ingreso de un competidor global con precios predatorios.',
+        questionEn: 'Map competitors, channels and partners around the solution, link them and test against sudden competitor moves.',
+        recommendedSeconds: 360,
+        facilitatorTip: 'Prueba la resistencia del modelo con el evento emergente.',
+        facilitatorTipEn: 'Stress-test the business model resilience via emergent events.',
+      },
+    ],
+    emergentPresets: [
+      {
+        title: 'Entrada de Competidor Tecnológico Global',
+        titleEn: 'Global Tech Giant Market Entry',
+        description: 'Una gran multinacional lanza una función gratuita similar a nuestro producto.',
+        descriptionEn: 'A global tech giant launches a free native version of our core product.',
+        impactQuestion: '¿Qué ventaja única e inimitable de nuestro modelo compartido nos mantiene vigentes?',
+        impactQuestionEn: 'What defensible, unique asset in our shared model protects our position?',
+      },
+      {
+        title: 'Cambio Regulatorio Estricto en Privacidad/Sostenibilidad',
+        titleEn: 'Stringent Regulatory or Compliance Shift',
+        description: 'Nueva normativa impone restricciones inmediatas al modelo operativo estándar.',
+        descriptionEn: 'New regulations impose strict compliance barriers on standard delivery.',
+        impactQuestion: '¿Cómo reconfiguramos el flujo entre las piezas para cumplir sin perder agilidad?',
+        impactQuestionEn: 'How do we adapt the operational flow without losing agility?',
+      },
+    ],
+  },
+  {
+    id: 'transformacion-cultural',
+    name: 'Transformación Cultural, Clima y Valores Organizacionales',
+    nameEn: 'Culture Transformation, Climate & Shared Values',
+    badge: 'Cultura & Valores',
+    badgeEn: 'Culture & Values',
+    summary: 'Construcción participativa de la identidad colectiva, superación de silos organizacionales y adopción de conductas y principios rectores vivos.',
+    summaryEn: 'Co-creating collective culture, dismantling departmental silos, and embedding living values and behavioral guiding principles.',
+    stages: [
+      {
+        level: 'skills',
+        title: 'Etapa 0: Calentamiento — Metáfora de Orgullo Institucional',
+        titleEn: 'Stage 0: Warm-up — Metaphor of Institutional Pride',
+        question: 'Construye un modelo con 4 o 5 piezas que represente un momento en el que sentiste profundo orgullo de pertenecer a esta organización.',
+        questionEn: 'Build with 4-5 bricks what made you feel genuinely proud of belonging to this organization.',
+        recommendedSeconds: 180,
+        facilitatorTip: 'Conectar emocionalmente a los participantes con lo positivo antes de abordar tensiones.',
+        facilitatorTipEn: 'Emotionally prime participants with positive purpose before addressing friction.',
+      },
+      {
+        level: 'individual',
+        title: 'Etapa 1: Barreras y Hábitos que Debemos Transformar',
+        titleEn: 'Stage 1: Cultural Friction & Habits to Transform',
+        question: 'Construye el obstáculo cultural invisible (falta de comunicación, silos, aversión al riesgo, lentitud) que más frena nuestra evolución.',
+        questionEn: 'Build the invisible cultural barrier (silos, fear of failure, inertia) holding back our potential.',
+        recommendedSeconds: 300,
+        facilitatorTip: 'Recordar que se ataca el modelo LEGO, nunca a la persona que lo construyó.',
+        facilitatorTipEn: 'Reiterate externalization: we examine the LEGO model, never the individual.',
+      },
+      {
+        level: 'shared',
+        title: 'Etapa 2: Nuestro Manifiesto Cultural en 3D',
+        titleEn: 'Stage 2: Co-created 3D Culture Manifesto',
+        question: 'Construyamos en el centro el modelo de la "Cultura que Elegimos Vivir": los valores, actitudes y prácticas compartidas que nos guiarán.',
+        questionEn: 'Co-build the central 3D Culture Manifesto: shared values, attitudes, and daily practices we commit to living.',
+        recommendedSeconds: 420,
+        facilitatorTip: 'Cada integrante coloca una pieza clave que representa su compromiso personal con el cambio.',
+        facilitatorTipEn: 'Each member places a key brick representing their personal commitment to the shift.',
+      },
+      {
+        level: 'landscape',
+        title: 'Etapa 3: Vínculos Interdepartamentales y Principios Simples',
+        titleEn: 'Stage 3: Cross-Departmental Links & Simple Guiding Principles',
+        question: 'Traza conexiones entre distintas áreas representadas en la mesa y formula 3 Principios Rectores Simples para resolver desacuerdos cotidianos.',
+        questionEn: 'Build connections between represented areas and define 3 Simple Guiding Principles to resolve daily friction.',
+        recommendedSeconds: 360,
+        facilitatorTip: 'Documenta los Principios Rectores Simples para incluirlos en el reporte ejecutivo.',
+        facilitatorTipEn: 'Capture the Simple Guiding Principles directly into the executive documentation.',
+      },
+    ],
+    emergentPresets: [
+      {
+        title: 'Conflicto de Intereses o Prioridades Cruzadas',
+        titleEn: 'Cross-Department Priority Conflict',
+        description: 'Dos áreas estratégicas tienen metas contrapuestas bajo una fecha límite inamovible.',
+        descriptionEn: 'Two core departments face opposing priorities under an immovable deadline.',
+        impactQuestion: '¿Qué principio de nuestro modelo cultural resuelve el dilema sin deteriorar la confianza?',
+        impactQuestionEn: 'Which guiding principle from our 3D model resolves this without eroding trust?',
+      },
+      {
+        title: 'Rotación Acelerada de Talento Clave',
+        titleEn: 'Sudden Key Talent Turnover',
+        description: 'Miembros históricos del equipo migran y se debe transmitir la cultura rápidamente a nuevos integrantes.',
+        descriptionEn: 'Experienced staff departs and culture must be quickly imparted to new cohorts.',
+        impactQuestion: '¿Qué ancla visual de nuestra cultura garantiza continuidad y sentido de pertenencia?',
+        impactQuestionEn: 'Which visual anchor in our cultural landscape ensures continuity and belonging?',
+      },
+    ],
+  },
+  {
+    id: 'capacidades-topp',
+    name: 'Diagnóstico y Fortalecimiento de Capacidades TOPP',
+    nameEn: 'Institutional TOPP Capabilities Diagnostic & Strengthening',
+    badge: 'Marco TOPP',
+    badgeEn: 'TOPP Framework',
+    summary: 'Evaluación y diseño sistémico de las cuatro funciones críticas interdependientes: Técnica (datos/evidencia), Operativa (recursos/coordinación), Política (legitimidad/coaliciones) y Prospectiva (futuro/anticipación), para superar las tres trampas del desarrollo.',
+    summaryEn: 'Systemic diagnostic and design across four critical interdependent functions: Technical (evidence), Operational (execution), Political (legitimacy), and Prospective (foresight) to overcome development traps.',
+    stages: [
+      {
+        level: 'skills',
+        title: 'Etapa 0: Calentamiento — La Torre de los "Cómo" vs "Qué" del Desarrollo',
+        titleEn: 'Stage 0: Warm-up — The Tower of "How" vs "What" of Development',
+        question: 'Construye una torre que represente el equilibrio entre tener un diagnóstico técnico claro ("qué hacer") y la capacidad institucional real para implementarlo y sostenerlo ("cómo hacerlo").',
+        questionEn: 'Build a tower expressing balance between a technical diagnosis ("what to do") and actual institutional capability to deliver and sustain it ("how to do it").',
+        recommendedSeconds: 180,
+        facilitatorTip: 'Destacar que no basta con voluntarismo o normas en papel; la fortaleza institucional radica en la sinergia funcional.',
+        facilitatorTipEn: 'Emphasize that rules on paper or good will are not enough; strength lies in functional synergy.',
+      },
+      {
+        level: 'individual',
+        title: 'Etapa 1: Diagnóstico de Brechas en la Tétrada TOPP (T, O, P, P)',
+        titleEn: 'Stage 1: Institutional Gap Diagnostic across TOPP Functions',
+        question: 'Construye un modelo que exponga el cuello de botella más grave de tu institución: ¿Es Técnico (falta de datos/métricas), Operativo (fricción burocrática/recursos), Político (falta de legitimidad/coaliciones) o Prospectivo (inmediatez/ceguera de futuro)? Identifica tu Ladrillo Rojo.',
+        questionEn: 'Build a model exposing your institution\'s critical bottleneck: Technical (evidence/data), Operational (coordination/delivery), Political (legitimacy/alliances), or Prospective (foresight deficit)? Mark your Red Brick.',
+        recommendedSeconds: 360,
+        facilitatorTip: 'Usa la clasificación de Brinks et al. del manual: ¿Institución débil por insignificante, inefectiva o inestable?',
+        facilitatorTipEn: 'Reference Brinks et al.: is the institution weak due to insignificance, ineffectiveness, or instability?',
+      },
+      {
+        level: 'shared',
+        title: 'Etapa 2: Arquitectura del Sistema Funcional Integrado TOPP',
+        titleEn: 'Stage 2: Co-created Integrated TOPP Functional Architecture',
+        question: 'Construyamos en el centro de la mesa la plataforma institucional común donde la solvencia Técnica respalde la negociación Política, la capacidad Operativa viabilice la ejecución y la visión Prospectiva oriente el rumbo a largo plazo.',
+        questionEn: 'Co-build in the center the unified institutional platform where Technical rigor informs Political consensus, Operational agility executes, and Prospective foresight guides the horizon.',
+        recommendedSeconds: 420,
+        facilitatorTip: 'Verifica que ninguna de las 4 dimensiones TOPP quede huérfana en el modelo compartido.',
+        facilitatorTipEn: 'Ensure none of the 4 TOPP functions is omitted or underrepresented in the shared build.',
+      },
+      {
+        level: 'landscape',
+        title: 'Etapa 3: Paisaje de Gobernanza Multiactor y Vínculos de Interdependencia',
+        titleEn: 'Stage 3: Multi-Stakeholder Governance Landscape & Systemic Links',
+        question: 'Ubica en el paisaje a los actores clave (gobierno central, gobiernos subnacionales, sector privado, academia, ciudadanía) y construye conexiones rígidas, flexibles y causales que superen la fragmentación territorial y las "zonas marrones".',
+        questionEn: 'Position key actors (central government, subnational entities, private sector, academia, citizens) and build links to bridge territorial gaps and "brown zones".',
+        recommendedSeconds: 360,
+        facilitatorTip: 'Analiza asimetrías de capacidades entre el nivel nacional y los territorios.',
+        facilitatorTipEn: 'Explore structural capacity asymmetries between national and subnational levels.',
+      },
+      {
+        level: 'landscape',
+        title: 'Etapa 4: Prueba de Estrés ("What-If") y Principios Rectores Simples (SGP)',
+        titleEn: 'Stage 4: Stress-Testing Shocks & Simple Guiding Principles (SGP)',
+        question: 'Simula un choque disruptivo del entorno y formula 3 Principios Rectores Simples (Simple Guiding Principles) para garantizar que la política pública trascienda los ciclos político-electorales y preserve su integridad técnica y operativa.',
+        questionEn: 'Simulate an external disruption and formulate 3 Simple Guiding Principles ensuring the reform outlives electoral cycles and maintains technical and operational integrity.',
+        recommendedSeconds: 360,
+        facilitatorTip: 'Sistematiza los Principios Rectores para el Barómetro y el Informe PDF.',
+        facilitatorTipEn: 'Record the Simple Guiding Principles for the Barometer and final PDF report.',
+      },
+    ],
+    emergentPresets: [
+      {
+        title: 'Alternancia de Gobierno y Polarización Política',
+        titleEn: 'Government Transition & Political Polarization',
+        description: 'Un cambio de administración amenaza con desmantelar programas en curso por falta de pactos programáticos de Estado o leyes marco multipartidarias.',
+        descriptionEn: 'An administration change threatens ongoing reforms due to lack of cross-party pacts or legislative safeguard frameworks.',
+        impactQuestion: '¿Qué salvaguarda política o mecanismo de resiliencia en el modelo protege la continuidad de la política?',
+        impactQuestionEn: 'Which political safeguard or institutional resilience mechanism protects policy continuity?',
+      },
+      {
+        title: 'Disrupción Tecnológica e Inteligencia Artificial no Regulada',
+        titleEn: 'Rapid Tech & AI Disruption Shock',
+        description: 'La aceleración de la IA y la automatización supera los marcos regulatorios y capacidades técnicas del aparato público, ensanchando brechas de servicio.',
+        descriptionEn: 'Accelerating AI and automation outpaces public regulatory and technical capabilities, widening service delivery divides.',
+        impactQuestion: '¿Cómo se reconfiguran las capacidades técnicas y operativas ampliadas para aprovechar la tecnología con equidad?',
+        impactQuestionEn: 'How do expanded technical and operational capabilities pivot to leverage tech with equity?',
+      },
+      {
+        title: 'Crisis Fiscal Repentina y Reducción del Gasto Público',
+        titleEn: 'Fiscal Crisis & Public Spending Contraction',
+        description: 'Una contracción macroeconómica obliga a priorizar el presupuesto operativo en un 25% sin sacrificar el impacto social crítico.',
+        descriptionEn: 'Macroeconomic downturn mandates a 25% operational budget cut without jeopardizing vital social protection.',
+        impactQuestion: '¿Qué rutinas operativas ágiles y flexibles absorben el ajuste protegiendo el núcleo de la intervención?',
+        impactQuestionEn: 'What agile operational routines absorb the contraction while safeguarding the intervention core?',
+      },
+    ],
+  },
+  {
+    id: 'topp-territorial-multinivel',
+    name: 'Gobernanza Territorial y Capacidades TOPP Multinivel',
+    nameEn: 'Multilevel Territorial Governance & Subnational TOPP',
+    badge: 'Gobernanza Territorial',
+    badgeEn: 'Territorial Governance',
+    summary: 'Aplicación de las capacidades TOPP enfocada en cerrar las asimetrías entre niveles de gobierno, erradicar "zonas marrones" de presencia estatal precaria y codiseñar futuros territoriales sostenibles.',
+    summaryEn: 'Application of TOPP capabilities focused on bridging national-subnational asymmetries, eliminating "brown zones" of state absence, and co-designing sustainable regional futures.',
+    stages: [
+      {
+        level: 'skills',
+        title: 'Etapa 0: Calentamiento — Metáfora de Identidad Territorial',
+        titleEn: 'Stage 0: Warm-up — Metaphor of Territorial Identity',
+        question: 'Construye con 5 piezas una representación de la vocación productiva, cultural o comunitaria más distintiva de tu territorio o región.',
+        questionEn: 'Build with 5 bricks the most distinctive productive, cultural, or community identity of your territory.',
+        recommendedSeconds: 180,
+        facilitatorTip: 'Enfatizar la diversidad territorial: los futuros viables no son homogéneos.',
+        facilitatorTipEn: 'Highlight territorial heterogeneity: viable futures are place-based and differentiated.',
+      },
+      {
+        level: 'individual',
+        title: 'Etapa 1: La Asimetría y Desconexión Multinivel más Crítica',
+        titleEn: 'Stage 1: The Most Critical Multilevel Asymmetry or Friction',
+        question: 'Construye la desconexión o barrera más aguda que hoy frena la cooperación entre el gobierno central y las autoridades locales en tu sector.',
+        questionEn: 'Build the most acute barrier hindering cooperation between central and subnational authorities in your sector.',
+        recommendedSeconds: 300,
+        facilitatorTip: 'Invita a explorar la noción de "zonas marrones" de O\'Donnell mencionadas en el texto.',
+        facilitatorTipEn: 'Encourage participants to reflect on O\'Donnell\'s "brown zones" of discontinuous state presence.',
+      },
+      {
+        level: 'shared',
+        title: 'Etapa 2: Mecanismo de Articulación y Cocreación Multinivel',
+        titleEn: 'Stage 2: Multilevel Alignment & Co-Creation Mechanism',
+        question: 'Construyan juntos en el centro de la mesa el acuerdo o plataforma de gobernanza multinivel que transfiere capacidades reales, recursos y autonomía coordinada hacia el territorio.',
+        questionEn: 'Co-build in the center the multilevel governance mechanism transferring real capabilities, resources, and aligned autonomy to regions.',
+        recommendedSeconds: 420,
+        facilitatorTip: 'Asegurar que las demandas locales no queden subordinadas a la visión centralista.',
+        facilitatorTipEn: 'Ensure local priorities are genuinely woven into the overarching mechanism.',
+      },
+      {
+        level: 'landscape',
+        title: 'Etapa 3: Ecosistema Territorial, Conexiones de Confianza y Choque Climático',
+        titleEn: 'Stage 3: Regional Ecosystem, Trust Networks & Climate Shock',
+        question: 'Traza conexiones entre comunidades locales, empresas regionales y entidades públicas. Somételo a un evento climático extremo y extrae los Principios Rectores.',
+        questionEn: 'Build links between local communities, regional enterprise, and public entities. Test against extreme climate shock and extract guiding principles.',
+        recommendedSeconds: 360,
+        facilitatorTip: 'Evalúa la flexibilidad operativa y estratégica para responder en tiempo real.',
+        facilitatorTipEn: 'Assess operational and strategic flexibility to respond in real time.',
+      },
+    ],
+    emergentPresets: [
+      {
+        title: 'Emergencia Climática y Desastre Socionatural',
+        titleEn: 'Extreme Climate Disaster & Territorial Impact',
+        description: 'Un evento extremo (inundación o sequía severa) colapsa la infraestructura regional y exige coordinación descentralizada inmediata.',
+        descriptionEn: 'Severe drought or flood compromises regional infrastructure, demanding rapid decentralized response.',
+        impactQuestion: '¿Qué vínculo operativo y comunitario del modelo sostiene el auxilio inmediato sin esperar al nivel central?',
+        impactQuestionEn: 'Which community and operational link sustains front-line action without central bottlenecks?',
+      },
+      {
+        title: 'Conflicto Socioambiental y Pérdida de Licencia Social',
+        titleEn: 'Socio-Environmental Dispute & Loss of Social License',
+        description: 'Se paraliza un proyecto estratégico clave por desacuerdo comunitario sobre el uso del agua y los beneficios locales.',
+        descriptionEn: 'A strategic project is halted due to community opposition regarding environmental resources and local benefits.',
+        impactQuestion: '¿Qué canal de diálogo y compensación política del modelo restituye la legitimidad?',
+        impactQuestionEn: 'What political dialogue and fair compensation mechanism restores social trust?',
+      },
+    ],
+  },
 ];
+
+const TEMPLATES_STORAGE_KEY = 'lsp_custom_workshop_templates_v1';
+
+export function getStoredTemplates() {
+  if (typeof window === 'undefined') {
+    return JSON.parse(JSON.stringify(DEFAULT_WORKSHOP_TEMPLATES));
+  }
+  try {
+    const raw = localStorage.getItem(TEMPLATES_STORAGE_KEY);
+    if (!raw) {
+      return JSON.parse(JSON.stringify(DEFAULT_WORKSHOP_TEMPLATES));
+    }
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed;
+    }
+  } catch (err) {
+    console.warn('Error loading custom templates from localStorage:', err);
+  }
+  return JSON.parse(JSON.stringify(DEFAULT_WORKSHOP_TEMPLATES));
+}
+
+export function saveStoredTemplates(templates) {
+  if (typeof window !== 'undefined' && Array.isArray(templates)) {
+    try {
+      localStorage.setItem(TEMPLATES_STORAGE_KEY, JSON.stringify(templates));
+    } catch (err) {
+      console.warn('Error saving custom templates to localStorage:', err);
+    }
+  }
+  return templates;
+}
+
+export function resetStoredTemplates() {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(TEMPLATES_STORAGE_KEY);
+    } catch (err) {
+      // ignore
+    }
+  }
+  return JSON.parse(JSON.stringify(DEFAULT_WORKSHOP_TEMPLATES));
+}
+
+export const WORKSHOP_TEMPLATES = getStoredTemplates();
 
 export const CONNECTION_TYPES = [
   {

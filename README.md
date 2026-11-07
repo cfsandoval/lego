@@ -20,7 +20,7 @@ npm run dev
 ## 🧩 Características Metodológicas Incluidas
 
 1. **Salas Multijugador en Tiempo Real con Persistencia (`data/rooms.json`)**
-   - Comparte un código de sala (por defecto `ONU2026`) para que múltiples participantes y facilitadores construyan simultáneamente en la misma mesa 3D.
+   - Comparte un código de sala (por defecto `TEST1`) para que múltiples participantes y facilitadores construyan simultáneamente en la misma mesa 3D.
 2. **Tablero 3D Interactivo (Three.js)**
    - Catálogo de 12 piezas representativas de los kits *Identity & Landscape* y *Connections* (Bloques 2×4, 2×2, 1×4, Placas 4×4, Torres/Faros, Puentes/Arcos, Rampas, Cilindros, Minifiguras, Banderas, Árboles de Sostenibilidad y Engranajes).
    - Paleta de 10 colores con guía de simbolismo psicológico/metafórico.
@@ -35,6 +35,6 @@ npm run dev
    - **Conectores Sistémicos 3D:** Traza vínculos rígidos, flexibles o causales entre piezas con etiquetas de relación.
    - **Simulador de Eventos Emergentes:** Dispara escenarios disruptivos en tiempo real (ej. *Terremoto / Emergencia Sísmica Mayor*, *Crisis Climática 2035*, *Transición IA*) para evaluar cómo se adapta el sistema construido.
 5. **Plantillas de Talleres e Informe PDF**
-   - Incluye plantillas para **Prospectiva Territorial y Visión 2050 (CEPAL / ILPES / Quindío)**, **Estrategia en Tiempo Real para Equipos** y **Matriz 2×2 de Gestión de Riesgos**.
+   - Incluye plantillas para **Prospectiva Territorial**, **Estrategia en Tiempo Real para Equipos**, **Matriz 2×2 de Gestión de Riesgos**, **Taller Estándar Oficial LSP**, **Innovación & Producto**, **Transformación Cultural** y **Capacidades Institucionales TOPP**.
    - Exportación inmediata a **Informe PDF estructurado** y respaldo completo en **JSON**.
 
